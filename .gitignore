@@ -32,6 +32,12 @@ yarn-error.*
 
 # local env files
 .env*.local
+backend/.env
+backend/data/yourzon.db
+backend/data/yourzon.db-shm
+backend/data/yourzon.db-wal
+backend/data/whatsapp-session/
+backend/data/qr.png
 
 # typescript
 *.tsbuildinfo
