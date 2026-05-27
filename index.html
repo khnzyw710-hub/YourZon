@@ -1,0 +1,1381 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>YourZon | עולם הטכנולוגיה שלך</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Rubik:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet" />
+
+  <style>
+    /* ═══════════════════════════════════════════════
+       VARIABLES & RESET
+    ═══════════════════════════════════════════════ */
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+    :root {
+      --bg:          #04040e;
+      --bg2:         #080818;
+      --glass:       rgba(255,255,255,0.055);
+      --glass-h:     rgba(255,255,255,0.10);
+      --border:      rgba(255,255,255,0.11);
+      --border-h:    rgba(255,255,255,0.28);
+      --indigo:      #6366f1;
+      --violet:      #8b5cf6;
+      --pink:        #ec4899;
+      --cyan:        #22d3ee;
+      --emerald:     #10b981;
+      --amber:       #f59e0b;
+      --red:         #ef4444;
+      --text:        #ffffff;
+      --text-s:      rgba(255,255,255,0.72);
+      --text-m:      rgba(255,255,255,0.42);
+      --grad:        linear-gradient(135deg,#6366f1,#8b5cf6,#ec4899);
+      --grad2:       linear-gradient(135deg,#22d3ee,#6366f1);
+      --shadow:      0 8px 40px rgba(0,0,0,0.55);
+    }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      font-family: 'Rubik', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      overflow-x: hidden;
+      direction: rtl;
+      cursor: none;
+    }
+
+    ::-webkit-scrollbar { width: 5px; }
+    ::-webkit-scrollbar-track { background: var(--bg); }
+    ::-webkit-scrollbar-thumb { background: var(--indigo); border-radius: 3px; }
+
+    /* ═══════════════════════════════════════════════
+       CUSTOM CURSOR
+    ═══════════════════════════════════════════════ */
+    #cursor {
+      width: 12px; height: 12px;
+      background: var(--indigo);
+      border-radius: 50%;
+      position: fixed;
+      pointer-events: none;
+      z-index: 99999;
+      transform: translate(-50%,-50%);
+      transition: width .15s, height .15s, background .15s;
+      mix-blend-mode: screen;
+    }
+    #cursor-ring {
+      width: 38px; height: 38px;
+      border: 1.5px solid rgba(99,102,241,0.6);
+      border-radius: 50%;
+      position: fixed;
+      pointer-events: none;
+      z-index: 99998;
+      transform: translate(-50%,-50%);
+      transition: width .35s, height .35s, border-color .35s, transform .08s;
+    }
+    body:has(a:hover) #cursor,
+    body:has(button:hover) #cursor { width: 20px; height: 20px; background: var(--pink); }
+    body:has(a:hover) #cursor-ring,
+    body:has(button:hover) #cursor-ring { width: 56px; height: 56px; border-color: rgba(236,72,153,0.6); }
+
+    /* ═══════════════════════════════════════════════
+       CANVAS BACKGROUND
+    ═══════════════════════════════════════════════ */
+    #bg-canvas {
+      position: fixed; top: 0; left: 0;
+      width: 100%; height: 100%;
+      z-index: 0; pointer-events: none;
+    }
+
+    /* ═══════════════════════════════════════════════
+       AMBIENT ORBS
+    ═══════════════════════════════════════════════ */
+    .orb {
+      position: fixed; border-radius: 50%;
+      filter: blur(90px); pointer-events: none;
+      z-index: 0; will-change: transform;
+    }
+    .orb-1 { width: 700px; height: 700px; background: radial-gradient(circle,rgba(99,102,241,.28),transparent 70%); top: -250px; right: -200px; }
+    .orb-2 { width: 600px; height: 600px; background: radial-gradient(circle,rgba(236,72,153,.22),transparent 70%); bottom: -250px; left: -200px; }
+    .orb-3 { width: 500px; height: 500px; background: radial-gradient(circle,rgba(34,211,238,.18),transparent 70%); top: 40%; left: 30%; }
+
+    /* ═══════════════════════════════════════════════
+       LOADING SPLASH
+    ═══════════════════════════════════════════════ */
+    #splash {
+      position: fixed; inset: 0;
+      background: var(--bg);
+      z-index: 99999;
+      display: flex; align-items: center; justify-content: center; flex-direction: column;
+      gap: 1.5rem;
+      transition: opacity .6s ease, visibility .6s ease;
+    }
+    #splash.hidden { opacity: 0; visibility: hidden; }
+
+    .splash-logo {
+      font-size: 3rem; font-weight: 900;
+      background: var(--grad); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+      animation: logo-pulse 1.5s ease-in-out infinite;
+    }
+    @keyframes logo-pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.5; } }
+
+    .splash-bar {
+      width: 200px; height: 3px;
+      background: rgba(255,255,255,0.1);
+      border-radius: 2px; overflow: hidden;
+    }
+    .splash-fill {
+      height: 100%; border-radius: 2px;
+      background: var(--grad);
+      animation: fill-bar 1.6s cubic-bezier(.4,0,.2,1) forwards;
+    }
+    @keyframes fill-bar { from { width: 0; } to { width: 100%; } }
+
+    /* ═══════════════════════════════════════════════
+       NAVBAR
+    ═══════════════════════════════════════════════ */
+    .navbar {
+      position: fixed; top: 0; left: 0; right: 0; z-index: 1000;
+      padding: 0 2rem;
+      background: rgba(4,4,14,.55);
+      backdrop-filter: blur(24px) saturate(200%);
+      -webkit-backdrop-filter: blur(24px) saturate(200%);
+      border-bottom: 1px solid var(--border);
+      transition: background .3s;
+    }
+    .navbar.scrolled { background: rgba(4,4,14,.88); }
+
+    .nav-inner {
+      max-width: 1440px; margin: 0 auto;
+      display: flex; align-items: center; justify-content: space-between;
+      height: 68px; gap: 2rem;
+    }
+
+    .logo { text-decoration: none; display: flex; align-items: center; gap: 0.5rem; }
+    .logo-text {
+      font-size: 1.6rem; font-weight: 900;
+      background: var(--grad); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+    }
+    .logo-badge {
+      background: var(--grad); padding: 2px 9px; border-radius: 20px;
+      font-size: .6rem; font-weight: 800; color: #fff; -webkit-text-fill-color: #fff;
+    }
+
+    .nav-links { display: flex; list-style: none; gap: .25rem; align-items: center; }
+    .nav-links a {
+      color: var(--text-s); text-decoration: none; font-size: .9rem; font-weight: 500;
+      padding: .45rem 1rem; border-radius: 50px; transition: all .25s ease;
+    }
+    .nav-links a:hover, .nav-links a.active {
+      color: var(--text);
+      background: rgba(99,102,241,.18);
+    }
+
+    .nav-actions { display: flex; align-items: center; gap: .5rem; }
+
+    .nav-icon {
+      width: 42px; height: 42px;
+      display: flex; align-items: center; justify-content: center;
+      border-radius: 50%; border: 1px solid var(--border);
+      background: var(--glass); color: var(--text-s); font-size: 1rem;
+      cursor: pointer; position: relative; transition: all .25s ease;
+    }
+    .nav-icon:hover {
+      background: var(--glass-h); color: var(--text); border-color: var(--border-h);
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(99,102,241,.35);
+    }
+    .nav-icon .badge {
+      position: absolute; top: -4px; left: -3px;
+      background: var(--grad); width: 18px; height: 18px;
+      border-radius: 50%; font-size: .6rem; font-weight: 800;
+      display: flex; align-items: center; justify-content: center; color: #fff;
+    }
+
+    .nav-cta {
+      padding: .55rem 1.4rem; border-radius: 50px;
+      background: var(--grad); border: none;
+      font-family: 'Rubik',sans-serif; font-size: .9rem; font-weight: 700;
+      color: #fff; cursor: pointer; transition: all .3s ease;
+      box-shadow: 0 4px 20px rgba(99,102,241,.5);
+    }
+    .nav-cta:hover { transform: translateY(-2px); box-shadow: 0 8px 30px rgba(99,102,241,.7); }
+
+    /* ═══════════════════════════════════════════════
+       HERO
+    ═══════════════════════════════════════════════ */
+    .hero {
+      position: relative; z-index: 1;
+      min-height: 100vh;
+      display: flex; align-items: center;
+      padding: 100px 2rem 60px;
+      overflow: hidden;
+    }
+
+    .hero-inner {
+      max-width: 1440px; margin: 0 auto; width: 100%;
+      display: grid; grid-template-columns: 1fr 1fr; gap: 4rem; align-items: center;
+    }
+
+    .hero-pill {
+      display: inline-flex; align-items: center; gap: .5rem;
+      padding: .35rem 1rem; border-radius: 50px;
+      background: rgba(99,102,241,.12); border: 1px solid rgba(99,102,241,.4);
+      font-size: .8rem; font-weight: 700; color: #a5b4fc;
+      margin-bottom: 1.5rem;
+      animation: pill-glow 3s ease-in-out infinite;
+    }
+    .hero-pill::before {
+      content: ''; width: 8px; height: 8px; border-radius: 50%; background: var(--indigo);
+      animation: blink 2s ease-in-out infinite;
+    }
+    @keyframes blink { 0%,100% { opacity:1; transform:scale(1); } 50% { opacity:.4; transform:scale(.7); } }
+    @keyframes pill-glow { 0%,100% { box-shadow: 0 0 0 0 rgba(99,102,241,0); } 50% { box-shadow: 0 0 0 5px rgba(99,102,241,.12); } }
+
+    .hero-title {
+      font-size: clamp(2.6rem,5.5vw,5rem);
+      font-weight: 900; line-height: 1.05; margin-bottom: 1.4rem;
+    }
+
+    .grad-text {
+      background: var(--grad); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+    }
+    .grad-text-2 {
+      background: var(--grad2); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+    }
+
+    .hero-desc {
+      font-size: 1.1rem; color: var(--text-s); line-height: 1.75;
+      max-width: 500px; margin-bottom: 2.2rem;
+    }
+
+    .hero-btns { display: flex; gap: 1rem; flex-wrap: wrap; align-items: center; }
+
+    .btn-primary {
+      padding: .85rem 2.2rem; border-radius: 50px;
+      background: var(--grad); border: none;
+      font-family: 'Rubik',sans-serif; font-size: 1rem; font-weight: 700;
+      color: #fff; cursor: pointer; transition: all .3s ease;
+      box-shadow: 0 8px 30px rgba(99,102,241,.55);
+      text-decoration: none; display: inline-flex; align-items: center; gap: .4rem;
+    }
+    .btn-primary:hover { transform: translateY(-4px) scale(1.03); box-shadow: 0 16px 45px rgba(99,102,241,.75); }
+
+    .btn-glass {
+      padding: .85rem 2.2rem; border-radius: 50px;
+      background: var(--glass); border: 1px solid var(--border);
+      font-family: 'Rubik',sans-serif; font-size: 1rem; font-weight: 600;
+      color: var(--text); cursor: pointer; transition: all .3s ease;
+      backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+      text-decoration: none; display: inline-flex; align-items: center; gap: .4rem;
+    }
+    .btn-glass:hover { background: var(--glass-h); border-color: var(--border-h); transform: translateY(-4px); }
+
+    .hero-stats { display: flex; gap: 2.5rem; margin-top: 2.5rem; }
+    .stat { text-align: center; }
+    .stat-num {
+      font-size: 1.9rem; font-weight: 900;
+      background: var(--grad); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+    }
+    .stat-lbl { font-size: .75rem; color: var(--text-m); font-weight: 500; }
+
+    /* Hero visual */
+    .hero-visual { position: relative; display: flex; align-items: center; justify-content: center; }
+
+    .hero-card {
+      width: 320px;
+      padding: 1.8rem;
+      border-radius: 28px;
+      background: rgba(255,255,255,.055);
+      backdrop-filter: blur(30px) saturate(180%);
+      -webkit-backdrop-filter: blur(30px) saturate(180%);
+      border: 1px solid rgba(255,255,255,.16);
+      box-shadow: 0 30px 60px rgba(0,0,0,.6), inset 0 1px 0 rgba(255,255,255,.12);
+      transform-style: preserve-3d;
+      transition: transform .3s ease;
+      z-index: 2; position: relative;
+    }
+
+    .hero-product-badge {
+      position: absolute; top: -12px; right: 22px;
+      background: var(--grad); padding: 3px 14px; border-radius: 20px;
+      font-size: .72rem; font-weight: 800; color: #fff;
+    }
+
+    .hero-product-img {
+      width: 100%; height: 175px;
+      border-radius: 18px;
+      background: linear-gradient(135deg,rgba(99,102,241,.18),rgba(236,72,153,.15));
+      display: flex; align-items: center; justify-content: center;
+      font-size: 5.5rem; margin-bottom: 1.1rem;
+      position: relative; overflow: hidden;
+      transition: transform .4s ease;
+    }
+    .hero-product-img::before {
+      content: ''; position: absolute; inset: 0;
+      background: linear-gradient(135deg,rgba(255,255,255,.06),transparent);
+    }
+
+    .hero-card:hover .hero-product-img { transform: scale(1.06) rotateY(-5deg); }
+
+    .h-prod-name { font-size: 1.05rem; font-weight: 700; margin-bottom: .25rem; }
+    .h-prod-brand { font-size: .78rem; color: var(--text-m); margin-bottom: .9rem; }
+    .h-prod-row { display: flex; justify-content: space-between; align-items: center; }
+    .h-price-new {
+      font-size: 1.55rem; font-weight: 900;
+      background: var(--grad); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+    }
+    .h-price-old { font-size: .85rem; color: var(--text-m); text-decoration: line-through; }
+    .h-cart-btn {
+      width: 42px; height: 42px; border-radius: 50%;
+      background: var(--grad); border: none; color: #fff;
+      font-size: 1.1rem; cursor: pointer; display: flex; align-items: center; justify-content: center;
+      transition: all .3s ease;
+      box-shadow: 0 4px 16px rgba(99,102,241,.55);
+    }
+    .h-cart-btn:hover { transform: scale(1.15) rotate(12deg); box-shadow: 0 8px 24px rgba(99,102,241,.75); }
+
+    /* Floating badges */
+    .float-chip {
+      position: absolute;
+      padding: .65rem 1rem;
+      border-radius: 14px;
+      background: rgba(255,255,255,.08);
+      backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+      border: 1px solid rgba(255,255,255,.16);
+      font-size: .8rem; font-weight: 600;
+      display: flex; align-items: center; gap: .45rem;
+      white-space: nowrap;
+      animation: chip-float 4s ease-in-out infinite;
+      box-shadow: 0 8px 24px rgba(0,0,0,.35);
+    }
+    .fc-1 { top: 8%; right: -8%; animation-delay: 0s; }
+    .fc-2 { bottom: 12%; left: -14%; animation-delay: -2.1s; }
+    .fc-3 { top: 62%; right: -20%; animation-delay: -1s; }
+    @keyframes chip-float { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-14px); } }
+
+    /* ═══════════════════════════════════════════════
+       MARQUEE BRANDS
+    ═══════════════════════════════════════════════ */
+    .marquee-wrap {
+      position: relative; z-index: 1;
+      padding: 28px 0;
+      border-top: 1px solid var(--border);
+      border-bottom: 1px solid var(--border);
+      background: rgba(255,255,255,.02);
+      overflow: hidden;
+    }
+    .marquee-track {
+      display: flex; gap: 3.5rem; align-items: center;
+      animation: marquee 22s linear infinite;
+      width: max-content;
+    }
+    @keyframes marquee { from { transform: translateX(0); } to { transform: translateX(-50%); } }
+    .marquee-wrap::before,.marquee-wrap::after {
+      content: ''; position: absolute; top: 0; bottom: 0; width: 160px; z-index: 1; pointer-events: none;
+    }
+    .marquee-wrap::before { left: 0; background: linear-gradient(to right, var(--bg), transparent); }
+    .marquee-wrap::after  { right: 0; background: linear-gradient(to left, var(--bg), transparent); }
+
+    .brand-name { font-size: 1.2rem; font-weight: 800; color: var(--text-m); letter-spacing: .12em; cursor: default; transition: color .3s; }
+    .brand-name:hover { color: var(--text-s); }
+    .brand-dot { color: var(--indigo); font-size: 1rem; }
+
+    /* ═══════════════════════════════════════════════
+       SECTIONS COMMONS
+    ═══════════════════════════════════════════════ */
+    section { position: relative; z-index: 1; }
+    .wrap { max-width: 1440px; margin: 0 auto; padding: 0 2rem; }
+
+    .sec-head { text-align: center; margin-bottom: 3rem; }
+    .sec-label {
+      display: inline-block; font-size: .78rem; font-weight: 800;
+      letter-spacing: .22em; text-transform: uppercase; color: var(--indigo);
+      background: rgba(99,102,241,.1); border: 1px solid rgba(99,102,241,.3);
+      padding: .3rem 1rem; border-radius: 50px; margin-bottom: .9rem;
+    }
+    .sec-title { font-size: clamp(1.7rem,3vw,2.8rem); font-weight: 800; margin-bottom: .6rem; }
+    .sec-sub { font-size: 1rem; color: var(--text-s); max-width: 480px; margin: 0 auto; }
+
+    /* ═══════════════════════════════════════════════
+       CATEGORIES
+    ═══════════════════════════════════════════════ */
+    .categories { padding: 90px 0; }
+    .cat-grid { display: grid; grid-template-columns: repeat(auto-fit,minmax(195px,1fr)); gap: 1.4rem; }
+
+    .cat-card {
+      padding: 2rem 1.5rem;
+      border-radius: 22px;
+      background: var(--glass);
+      backdrop-filter: blur(20px) saturate(160%);
+      -webkit-backdrop-filter: blur(20px) saturate(160%);
+      border: 1px solid var(--border);
+      cursor: pointer; text-align: center;
+      transition: all .4s cubic-bezier(.175,.885,.32,1.28);
+      overflow: hidden; position: relative;
+      transform-style: preserve-3d;
+    }
+    .cat-card::after {
+      content: ''; position: absolute; inset: 0;
+      background: var(--cat-glow, rgba(99,102,241,.18));
+      opacity: 0; transition: opacity .35s ease; border-radius: 22px;
+    }
+    .cat-card:hover::after { opacity: 1; }
+    .cat-card:hover {
+      transform: translateY(-12px) scale(1.04);
+      border-color: var(--border-h);
+      box-shadow: 0 24px 60px rgba(0,0,0,.45), 0 0 0 1px rgba(255,255,255,.08);
+    }
+
+    .cat-emoji { font-size: 2.8rem; margin-bottom: .9rem; display: block; transition: transform .35s ease; }
+    .cat-card:hover .cat-emoji { transform: scale(1.28) rotate(-6deg) translateZ(30px); }
+    .cat-name { font-size: 1rem; font-weight: 700; margin-bottom: .25rem; }
+    .cat-count { font-size: .78rem; color: var(--text-m); }
+
+    /* ═══════════════════════════════════════════════
+       FEATURED BANNER
+    ═══════════════════════════════════════════════ */
+    .feature-strip { padding: 40px 0; }
+    .feature-cards { display: grid; grid-template-columns: repeat(3,1fr); gap: 1.5rem; }
+
+    .feat-card {
+      padding: 2rem;
+      border-radius: 22px;
+      background: var(--glass);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border: 1px solid var(--border);
+      display: flex; align-items: center; gap: 1rem;
+      transition: all .3s ease; cursor: default;
+    }
+    .feat-card:hover {
+      background: var(--glass-h); border-color: var(--border-h);
+      transform: translateY(-6px);
+      box-shadow: var(--shadow);
+    }
+    .feat-icon { font-size: 2.5rem; flex-shrink: 0; }
+    .feat-title { font-size: 1rem; font-weight: 700; margin-bottom: .25rem; }
+    .feat-desc { font-size: .83rem; color: var(--text-s); }
+
+    /* ═══════════════════════════════════════════════
+       PRODUCTS
+    ═══════════════════════════════════════════════ */
+    .products { padding: 90px 0; }
+
+    .tabs { display: flex; justify-content: center; gap: .5rem; margin-bottom: 3rem; flex-wrap: wrap; }
+    .tab {
+      padding: .48rem 1.4rem; border-radius: 50px;
+      background: var(--glass); border: 1px solid var(--border);
+      color: var(--text-s); font-family: 'Rubik',sans-serif;
+      font-size: .88rem; font-weight: 500; cursor: pointer;
+      transition: all .25s ease;
+    }
+    .tab:hover,.tab.active {
+      background: rgba(99,102,241,.22); border-color: rgba(99,102,241,.5); color: var(--text);
+    }
+
+    .prod-grid { display: grid; grid-template-columns: repeat(auto-fill,minmax(275px,1fr)); gap: 1.5rem; }
+
+    .prod-card {
+      position: relative;
+      padding: 1.5rem;
+      border-radius: 22px;
+      background: var(--glass);
+      backdrop-filter: blur(22px) saturate(180%);
+      -webkit-backdrop-filter: blur(22px) saturate(180%);
+      border: 1px solid var(--border);
+      overflow: hidden; cursor: pointer;
+      transition: border-color .3s, box-shadow .3s;
+      transform-style: preserve-3d;
+    }
+    .prod-card::before {
+      content: ''; position: absolute; top: 0; left: 0; right: 0; height: 1px;
+      background: linear-gradient(90deg,transparent,rgba(255,255,255,.25),transparent);
+    }
+    /* shine overlay (controlled by JS) */
+    .prod-card::after {
+      content: ''; position: absolute; inset: 0;
+      border-radius: 22px;
+      background: radial-gradient(circle at var(--mx,50%) var(--my,50%),rgba(255,255,255,.09),transparent 60%);
+      pointer-events: none; opacity: 0; transition: opacity .2s;
+    }
+    .prod-card:hover::after { opacity: 1; }
+    .prod-card:hover { border-color: rgba(255,255,255,.22); box-shadow: 0 28px 60px rgba(0,0,0,.5); }
+
+    .prod-img {
+      width: 100%; height: 180px; border-radius: 16px;
+      background: linear-gradient(135deg,rgba(99,102,241,.1),rgba(139,92,246,.08));
+      display: flex; align-items: center; justify-content: center;
+      font-size: 4.5rem; margin-bottom: 1.2rem;
+      overflow: hidden; position: relative; transition: transform .4s ease;
+    }
+    .prod-card:hover .prod-img { transform: scale(1.07); }
+
+    .prod-badge {
+      position: absolute; top: 10px; right: 10px;
+      background: linear-gradient(135deg,var(--pink),#f43f5e);
+      color: #fff; font-size: .68rem; font-weight: 800;
+      padding: 3px 9px; border-radius: 20px;
+    }
+
+    .prod-heart {
+      position: absolute; top: 10px; left: 10px;
+      width: 33px; height: 33px; border-radius: 50%;
+      background: rgba(255,255,255,.08); border: 1px solid rgba(255,255,255,.2);
+      display: flex; align-items: center; justify-content: center;
+      font-size: .85rem; transition: all .3s ease; cursor: pointer; color: var(--text-s);
+    }
+    .prod-heart:hover { background: rgba(236,72,153,.2); border-color: rgba(236,72,153,.5); color: var(--pink); transform: scale(1.12); }
+
+    .prod-brand { font-size: .72rem; color: var(--text-m); text-transform: uppercase; letter-spacing: .12em; margin-bottom: .25rem; }
+    .prod-name { font-size: 1rem; font-weight: 700; margin-bottom: .5rem; line-height: 1.3; }
+    .prod-stars { display: flex; align-items: center; gap: .3rem; margin-bottom: .85rem; }
+    .stars { color: #fbbf24; font-size: .8rem; }
+    .rev-count { font-size: .73rem; color: var(--text-m); }
+
+    .prod-foot { display: flex; align-items: center; justify-content: space-between; }
+    .prod-price { display: flex; flex-direction: column; }
+    .price-cur {
+      font-size: 1.35rem; font-weight: 900;
+      background: var(--grad); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+    }
+    .price-orig { font-size: .78rem; color: var(--text-m); text-decoration: line-through; }
+
+    .btn-cart {
+      padding: .55rem 1.15rem; border-radius: 50px;
+      background: var(--grad); border: none;
+      font-family: 'Rubik',sans-serif; font-size: .84rem; font-weight: 700;
+      color: #fff; cursor: pointer; transition: all .3s ease;
+      box-shadow: 0 4px 16px rgba(99,102,241,.45);
+    }
+    .btn-cart:hover { transform: translateY(-3px) scale(1.07); box-shadow: 0 10px 28px rgba(99,102,241,.65); }
+    .btn-cart.added { background: linear-gradient(135deg,var(--emerald),#059669); }
+
+    /* ═══════════════════════════════════════════════
+       PROMO / DEALS
+    ═══════════════════════════════════════════════ */
+    .promo { padding: 90px 0; }
+    .promo-box {
+      padding: 4rem;
+      border-radius: 30px;
+      background: linear-gradient(135deg,rgba(99,102,241,.18),rgba(236,72,153,.12),rgba(34,211,238,.1));
+      backdrop-filter: blur(24px) saturate(200%);
+      -webkit-backdrop-filter: blur(24px) saturate(200%);
+      border: 1px solid rgba(255,255,255,.14);
+      box-shadow: 0 30px 60px rgba(0,0,0,.4);
+      display: grid; grid-template-columns: 1fr auto; gap: 3rem; align-items: center;
+      overflow: hidden; position: relative;
+    }
+    .promo-box::before {
+      content: ''; position: absolute;
+      width: 700px; height: 700px; border-radius: 50%;
+      background: radial-gradient(circle,rgba(99,102,241,.25),transparent 70%);
+      top: -350px; right: -350px; pointer-events: none;
+    }
+
+    .promo-lbl {
+      font-size: .85rem; font-weight: 800; letter-spacing: .16em; text-transform: uppercase;
+      background: var(--grad); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+      margin-bottom: .7rem; display: block;
+    }
+    .promo-title { font-size: clamp(1.5rem,3vw,2.6rem); font-weight: 900; margin-bottom: .8rem; }
+    .promo-sub { color: var(--text-s); font-size: 1rem; margin-bottom: 2rem; }
+
+    .timer { display: flex; gap: 1rem; margin-bottom: 2rem; }
+    .timer-box {
+      min-width: 72px; padding: .9rem .8rem;
+      border-radius: 14px;
+      background: rgba(255,255,255,.07); border: 1px solid rgba(255,255,255,.14);
+      text-align: center;
+    }
+    .t-num {
+      font-size: 2.1rem; font-weight: 900;
+      background: var(--grad); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+      display: block; line-height: 1;
+      animation: t-flip .2s ease;
+    }
+    @keyframes t-flip { 0% { transform: scale(1.2); opacity:.6; } 100% { transform: scale(1); opacity:1; } }
+    .t-lbl { font-size: .68rem; color: var(--text-m); text-transform: uppercase; letter-spacing: .1em; margin-top: .3rem; display: block; }
+
+    .promo-visual { font-size: 9rem; opacity: .5; animation: spin-slow 25s linear infinite; }
+    @keyframes spin-slow { to { transform: rotate(360deg); } }
+
+    /* ═══════════════════════════════════════════════
+       REVIEWS
+    ═══════════════════════════════════════════════ */
+    .reviews { padding: 90px 0; }
+    .reviews-grid { display: grid; grid-template-columns: repeat(auto-fit,minmax(290px,1fr)); gap: 1.5rem; }
+
+    .review-card {
+      padding: 1.8rem;
+      border-radius: 22px;
+      background: var(--glass);
+      backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+      border: 1px solid var(--border);
+      transition: all .35s ease;
+    }
+    .review-card:hover { background: var(--glass-h); border-color: var(--border-h); transform: translateY(-8px); box-shadow: var(--shadow); }
+    .review-stars { color: #fbbf24; font-size: 1rem; margin-bottom: .9rem; }
+    .review-text { color: var(--text-s); font-size: .92rem; line-height: 1.7; margin-bottom: 1.2rem; }
+    .review-author { display: flex; align-items: center; gap: .75rem; }
+    .reviewer-avatar { width: 44px; height: 44px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1.3rem; border: 2px solid rgba(255,255,255,.1); }
+    .reviewer-name { font-size: .92rem; font-weight: 700; }
+    .reviewer-loc { font-size: .75rem; color: var(--text-m); }
+
+    /* ═══════════════════════════════════════════════
+       NEWSLETTER
+    ═══════════════════════════════════════════════ */
+    .newsletter { padding: 90px 0; }
+    .nl-box {
+      max-width: 620px; margin: 0 auto; text-align: center;
+      padding: 3.5rem;
+      border-radius: 28px;
+      background: rgba(99,102,241,.08);
+      backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+      border: 1px solid rgba(99,102,241,.2);
+    }
+    .nl-box h2 { font-size: 2rem; font-weight: 800; margin-bottom: .7rem; }
+    .nl-box p { color: var(--text-s); margin-bottom: 2rem; }
+    .nl-form { display: flex; gap: .8rem; flex-wrap: wrap; }
+    .nl-input {
+      flex: 1; min-width: 200px; padding: .85rem 1.4rem;
+      border-radius: 50px; border: 1px solid rgba(255,255,255,.15);
+      background: rgba(255,255,255,.06); color: var(--text);
+      font-family: 'Rubik',sans-serif; font-size: .95rem;
+      outline: none; direction: rtl; transition: border-color .25s;
+    }
+    .nl-input:focus { border-color: rgba(99,102,241,.6); }
+    .nl-input::placeholder { color: var(--text-m); }
+
+    /* ═══════════════════════════════════════════════
+       FOOTER
+    ═══════════════════════════════════════════════ */
+    footer { padding: 70px 0 30px; border-top: 1px solid var(--border); position: relative; z-index: 1; }
+    .footer-grid { display: grid; grid-template-columns: 2fr 1fr 1fr 1fr; gap: 3rem; margin-bottom: 3rem; }
+    .footer-brand p { color: var(--text-m); font-size: .88rem; line-height: 1.75; margin: 1rem 0 1.2rem; }
+
+    .socials { display: flex; gap: .7rem; }
+    .social-btn {
+      width: 40px; height: 40px; border-radius: 50%;
+      background: var(--glass); border: 1px solid var(--border);
+      display: flex; align-items: center; justify-content: center;
+      text-decoration: none; font-size: .9rem; color: var(--text-s);
+      transition: all .3s ease;
+    }
+    .social-btn:hover { background: rgba(99,102,241,.22); border-color: rgba(99,102,241,.5); transform: translateY(-3px); color: var(--text); }
+
+    .foot-col h4 { font-size: .88rem; font-weight: 700; margin-bottom: 1.1rem; color: var(--text); }
+    .foot-links { list-style: none; display: flex; flex-direction: column; gap: .55rem; }
+    .foot-links a { color: var(--text-m); text-decoration: none; font-size: .86rem; transition: color .25s; }
+    .foot-links a:hover { color: var(--indigo); }
+
+    .foot-bottom {
+      padding-top: 2rem; border-top: 1px solid var(--border);
+      display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;
+    }
+    .foot-copy { color: var(--text-m); font-size: .8rem; }
+    .payments { display: flex; gap: .45rem; align-items: center; }
+    .pay-badge {
+      padding: .3rem .7rem; background: var(--glass); border: 1px solid var(--border);
+      border-radius: 7px; font-size: .68rem; color: var(--text-s); font-weight: 700;
+    }
+
+    /* ═══════════════════════════════════════════════
+       SCROLL REVEAL
+    ═══════════════════════════════════════════════ */
+    .reveal { opacity: 0; transform: translateY(32px); transition: opacity .75s cubic-bezier(.16,1,.3,1), transform .75s cubic-bezier(.16,1,.3,1); }
+    .reveal.in { opacity: 1; transform: translateY(0); }
+
+    /* ═══════════════════════════════════════════════
+       PARTICLE BURST
+    ═══════════════════════════════════════════════ */
+    .burst-dot {
+      position: fixed; width: 9px; height: 9px; border-radius: 50%;
+      background: var(--grad); pointer-events: none; z-index: 99997;
+      transition: all .9s cubic-bezier(.25,.46,.45,.94);
+    }
+
+    /* ═══════════════════════════════════════════════
+       RESPONSIVE
+    ═══════════════════════════════════════════════ */
+    @media (max-width: 900px) {
+      .hero-inner { grid-template-columns: 1fr; text-align: center; }
+      .hero-visual { display: none; }
+      .hero-btns { justify-content: center; }
+      .hero-stats { justify-content: center; }
+      .hero-desc { max-width: 100%; }
+      .feature-cards { grid-template-columns: 1fr; }
+      .promo-box { grid-template-columns: 1fr; text-align: center; }
+      .promo-visual { display: none; }
+      .footer-grid { grid-template-columns: 1fr 1fr; }
+      .nav-links { display: none; }
+    }
+    @media (max-width: 560px) {
+      .footer-grid { grid-template-columns: 1fr; }
+      .nl-box { padding: 2rem 1.5rem; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- CURSOR -->
+<div id="cursor"></div>
+<div id="cursor-ring"></div>
+
+<!-- CANVAS BG -->
+<canvas id="bg-canvas"></canvas>
+
+<!-- AMBIENT ORBS -->
+<div class="orb orb-1"></div>
+<div class="orb orb-2"></div>
+<div class="orb orb-3"></div>
+
+<!-- LOADING SPLASH -->
+<div id="splash">
+  <div class="splash-logo">YourZon</div>
+  <div class="splash-bar"><div class="splash-fill"></div></div>
+</div>
+
+<!-- ═══ NAVBAR ═══ -->
+<nav class="navbar" id="navbar">
+  <div class="nav-inner">
+    <a href="#" class="logo">
+      <span class="logo-text">YourZon</span>
+      <span class="logo-badge">IL</span>
+    </a>
+    <ul class="nav-links">
+      <li><a href="#" class="active">דף הבית</a></li>
+      <li><a href="#categories">קטגוריות</a></li>
+      <li><a href="#products">מוצרים</a></li>
+      <li><a href="#deals">מבצעים</a></li>
+      <li><a href="#reviews">ביקורות</a></li>
+      <li><a href="#">צור קשר</a></li>
+    </ul>
+    <div class="nav-actions">
+      <button class="nav-icon">🔍</button>
+      <button class="nav-icon">
+        🛒
+        <span class="badge">3</span>
+      </button>
+      <button class="nav-cta">כניסה / הרשמה</button>
+    </div>
+  </div>
+</nav>
+
+<!-- ═══ HERO ═══ -->
+<section class="hero">
+  <div class="hero-inner">
+    <!-- LEFT -->
+    <div class="hero-content">
+      <div class="hero-pill">✨ קולקציית הקיץ 2025 הגיעה</div>
+      <h1 class="hero-title">
+        הטכנולוגיה<br>
+        של <span class="grad-text">המחר,</span><br>
+        <span class="grad-text-2">היום אצלך</span>
+      </h1>
+      <p class="hero-desc">
+        גלה אלפי מוצרי אלקטרוניקה מהמותגים המובילים בעולם, במחירי אינטרנט שאי אפשר להתחרות. משלוח חינם לכל הארץ תוך 24 שעות.
+      </p>
+      <div class="hero-btns">
+        <a href="#products" class="btn-primary">🛍️ לקנייה עכשיו</a>
+        <a href="#deals" class="btn-glass">🔥 מבצעים חמים</a>
+      </div>
+      <div class="hero-stats">
+        <div class="stat">
+          <div class="stat-num" data-count="50000">0</div>
+          <div class="stat-lbl">לקוחות מרוצים</div>
+        </div>
+        <div class="stat">
+          <div class="stat-num" data-count="5000">0</div>
+          <div class="stat-lbl">מוצרים</div>
+        </div>
+        <div class="stat">
+          <div class="stat-num">4.9 ⭐</div>
+          <div class="stat-lbl">דירוג ממוצע</div>
+        </div>
+      </div>
+    </div>
+    <!-- RIGHT -->
+    <div class="hero-visual">
+      <div class="float-chip fc-1">🚀 משלוח עד 24 שעות</div>
+      <div class="float-chip fc-2">⭐ 4.9/5 ביקורות</div>
+      <div class="float-chip fc-3">🔒 תשלום מאובטח 100%</div>
+
+      <div class="hero-card tilt" id="hero-main-card">
+        <div class="hero-product-badge">✨ חדש</div>
+        <div class="hero-product-img">📱</div>
+        <div class="h-prod-name">iPhone 16 Pro Max</div>
+        <div class="h-prod-brand">Apple · 256GB · Titanium Black</div>
+        <div class="h-prod-row">
+          <div>
+            <div class="h-price-new">₪4,999</div>
+            <div class="h-price-old">₪5,990</div>
+          </div>
+          <button class="h-cart-btn">+</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ MARQUEE ═══ -->
+<div class="marquee-wrap">
+  <div class="marquee-track" id="marquee">
+    <span class="brand-name">APPLE</span><span class="brand-dot">✦</span>
+    <span class="brand-name">SAMSUNG</span><span class="brand-dot">✦</span>
+    <span class="brand-name">SONY</span><span class="brand-dot">✦</span>
+    <span class="brand-name">MICROSOFT</span><span class="brand-dot">✦</span>
+    <span class="brand-name">GOOGLE</span><span class="brand-dot">✦</span>
+    <span class="brand-name">LG</span><span class="brand-dot">✦</span>
+    <span class="brand-name">XIAOMI</span><span class="brand-dot">✦</span>
+    <span class="brand-name">ASUS</span><span class="brand-dot">✦</span>
+    <span class="brand-name">DELL</span><span class="brand-dot">✦</span>
+    <span class="brand-name">HP</span><span class="brand-dot">✦</span>
+    <span class="brand-name">LENOVO</span><span class="brand-dot">✦</span>
+    <span class="brand-name">HUAWEI</span><span class="brand-dot">✦</span>
+    <!-- repeat for loop -->
+    <span class="brand-name">APPLE</span><span class="brand-dot">✦</span>
+    <span class="brand-name">SAMSUNG</span><span class="brand-dot">✦</span>
+    <span class="brand-name">SONY</span><span class="brand-dot">✦</span>
+    <span class="brand-name">MICROSOFT</span><span class="brand-dot">✦</span>
+    <span class="brand-name">GOOGLE</span><span class="brand-dot">✦</span>
+    <span class="brand-name">LG</span><span class="brand-dot">✦</span>
+    <span class="brand-name">XIAOMI</span><span class="brand-dot">✦</span>
+    <span class="brand-name">ASUS</span><span class="brand-dot">✦</span>
+    <span class="brand-name">DELL</span><span class="brand-dot">✦</span>
+    <span class="brand-name">HP</span><span class="brand-dot">✦</span>
+    <span class="brand-name">LENOVO</span><span class="brand-dot">✦</span>
+    <span class="brand-name">HUAWEI</span><span class="brand-dot">✦</span>
+  </div>
+</div>
+
+<!-- ═══ FEATURE STRIP ═══ -->
+<div class="feature-strip">
+  <div class="wrap">
+    <div class="feature-cards">
+      <div class="feat-card reveal">
+        <div class="feat-icon">🚀</div>
+        <div>
+          <div class="feat-title">משלוח מהיר בחינם</div>
+          <div class="feat-desc">הזמנות מעל ₪199 · אספקה תוך 24 שעות לכל הארץ</div>
+        </div>
+      </div>
+      <div class="feat-card reveal" style="transition-delay:.1s">
+        <div class="feat-icon">🔒</div>
+        <div>
+          <div class="feat-title">תשלום מאובטח</div>
+          <div class="feat-desc">הצפנת SSL 256-bit · כל אמצעי התשלום מקובלים</div>
+        </div>
+      </div>
+      <div class="feat-card reveal" style="transition-delay:.2s">
+        <div class="feat-icon">↩️</div>
+        <div>
+          <div class="feat-title">החזרה חינם 30 יום</div>
+          <div class="feat-desc">לא מרוצה? נחזיר לך את הכסף ללא שאלות</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ CATEGORIES ═══ -->
+<section class="categories" id="categories">
+  <div class="wrap">
+    <div class="sec-head reveal">
+      <div class="sec-label">קטגוריות</div>
+      <h2 class="sec-title">מה אתה <span class="grad-text">מחפש?</span></h2>
+      <p class="sec-sub">בחר מאות קטגוריות של מוצרים מהמובילים בתחום</p>
+    </div>
+    <div class="cat-grid">
+      <div class="cat-card tilt reveal" style="--cat-glow:rgba(99,102,241,.22)">
+        <span class="cat-emoji">📱</span>
+        <div class="cat-name">סמארטפונים</div>
+        <div class="cat-count">1,234 מוצרים</div>
+      </div>
+      <div class="cat-card tilt reveal" style="--cat-glow:rgba(16,185,129,.22);transition-delay:.05s">
+        <span class="cat-emoji">💻</span>
+        <div class="cat-name">מחשבים ניידים</div>
+        <div class="cat-count">567 מוצרים</div>
+      </div>
+      <div class="cat-card tilt reveal" style="--cat-glow:rgba(236,72,153,.22);transition-delay:.1s">
+        <span class="cat-emoji">🎧</span>
+        <div class="cat-name">אוזניות</div>
+        <div class="cat-count">890 מוצרים</div>
+      </div>
+      <div class="cat-card tilt reveal" style="--cat-glow:rgba(34,211,238,.22);transition-delay:.15s">
+        <span class="cat-emoji">⌚</span>
+        <div class="cat-name">שעונים חכמים</div>
+        <div class="cat-count">345 מוצרים</div>
+      </div>
+      <div class="cat-card tilt reveal" style="--cat-glow:rgba(251,191,36,.22);transition-delay:.2s">
+        <span class="cat-emoji">🎮</span>
+        <div class="cat-name">גיימינג</div>
+        <div class="cat-count">678 מוצרים</div>
+      </div>
+      <div class="cat-card tilt reveal" style="--cat-glow:rgba(239,68,68,.22);transition-delay:.25s">
+        <span class="cat-emoji">🏠</span>
+        <div class="cat-name">בית חכם</div>
+        <div class="cat-count">432 מוצרים</div>
+      </div>
+      <div class="cat-card tilt reveal" style="--cat-glow:rgba(139,92,246,.22);transition-delay:.3s">
+        <span class="cat-emoji">📸</span>
+        <div class="cat-name">מצלמות</div>
+        <div class="cat-count">312 מוצרים</div>
+      </div>
+      <div class="cat-card tilt reveal" style="--cat-glow:rgba(245,158,11,.22);transition-delay:.35s">
+        <span class="cat-emoji">🔌</span>
+        <div class="cat-name">אביזרים</div>
+        <div class="cat-count">2,100 מוצרים</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ PRODUCTS ═══ -->
+<section class="products" id="products">
+  <div class="wrap">
+    <div class="sec-head reveal">
+      <div class="sec-label">מוצרים מובחרים</div>
+      <h2 class="sec-title">הכי <span class="grad-text">פופולרי</span> עכשיו</h2>
+      <p class="sec-sub">המוצרים הנמכרים ביותר – מחיר שפוי, איכות פרמיום</p>
+    </div>
+    <div class="tabs">
+      <button class="tab active">הכל</button>
+      <button class="tab">Apple</button>
+      <button class="tab">Samsung</button>
+      <button class="tab">Sony</button>
+      <button class="tab">גיימינג</button>
+    </div>
+    <div class="prod-grid" id="products-grid">
+      <!-- generated by JS -->
+    </div>
+  </div>
+</section>
+
+<!-- ═══ DEALS / PROMO ═══ -->
+<section class="promo" id="deals">
+  <div class="wrap">
+    <div class="promo-box reveal">
+      <div>
+        <span class="promo-lbl">⚡ מבצע מוגבל בזמן</span>
+        <h2 class="promo-title">מכירת <span class="grad-text">הקיץ</span> הגדולה</h2>
+        <p class="promo-sub">עד 70% הנחה על מאות מוצרי אלקטרוניקה נבחרים. אל תפספס!</p>
+        <div class="timer">
+          <div class="timer-box"><span class="t-num" id="t-h">12</span><span class="t-lbl">שעות</span></div>
+          <div class="timer-box"><span class="t-num" id="t-m">34</span><span class="t-lbl">דקות</span></div>
+          <div class="timer-box"><span class="t-num" id="t-s">56</span><span class="t-lbl">שניות</span></div>
+        </div>
+        <a href="#products" class="btn-primary">🛒 לכל המבצעים</a>
+      </div>
+      <div class="promo-visual">🏷️</div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ REVIEWS ═══ -->
+<section class="reviews" id="reviews">
+  <div class="wrap">
+    <div class="sec-head reveal">
+      <div class="sec-label">ביקורות לקוחות</div>
+      <h2 class="sec-title">מה <span class="grad-text">אומרים</span> עלינו</h2>
+      <p class="sec-sub">4.9/5 מתוך מעל 12,000 ביקורות מאושרות</p>
+    </div>
+    <div class="reviews-grid" id="reviews-grid">
+      <!-- generated by JS -->
+    </div>
+  </div>
+</section>
+
+<!-- ═══ NEWSLETTER ═══ -->
+<section class="newsletter">
+  <div class="wrap">
+    <div class="nl-box reveal">
+      <h2>📬 הצטרף ל-<span class="grad-text">YourZon Club</span></h2>
+      <p>קבל מבצעים בלעדיים ועדכונים על מוצרים חדשים ישירות לאימייל שלך</p>
+      <div class="nl-form">
+        <input class="nl-input" type="email" placeholder="האימייל שלך..." />
+        <button class="btn-primary">הרשמה חינם 🎁</button>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ FOOTER ═══ -->
+<footer>
+  <div class="wrap">
+    <div class="footer-grid">
+      <div class="footer-brand">
+        <a href="#" class="logo">
+          <span class="logo-text">YourZon</span>
+          <span class="logo-badge">IL</span>
+        </a>
+        <p>חנות הטכנולוגיה המובילה בישראל. אנו מחויבים לספק את המוצרים הטובים ביותר במחירים הכי טובים שתמצאו ברשת.</p>
+        <div class="socials">
+          <a href="#" class="social-btn">📘</a>
+          <a href="#" class="social-btn">📸</a>
+          <a href="#" class="social-btn">🐦</a>
+          <a href="#" class="social-btn">▶️</a>
+          <a href="#" class="social-btn">💬</a>
+        </div>
+      </div>
+      <div class="foot-col">
+        <h4>ניווט מהיר</h4>
+        <ul class="foot-links">
+          <li><a href="#">דף הבית</a></li>
+          <li><a href="#">מוצרים</a></li>
+          <li><a href="#">מבצעים</a></li>
+          <li><a href="#">קטגוריות</a></li>
+          <li><a href="#">מועדון VIP</a></li>
+        </ul>
+      </div>
+      <div class="foot-col">
+        <h4>שירות לקוחות</h4>
+        <ul class="foot-links">
+          <li><a href="#">צור קשר</a></li>
+          <li><a href="#">מדיניות החזרות</a></li>
+          <li><a href="#">שאלות נפוצות</a></li>
+          <li><a href="#">אחריות ותיקונים</a></li>
+          <li><a href="#">מדיניות משלוחים</a></li>
+        </ul>
+      </div>
+      <div class="foot-col">
+        <h4>משפטי</h4>
+        <ul class="foot-links">
+          <li><a href="#">תנאי שימוש</a></li>
+          <li><a href="#">מדיניות פרטיות</a></li>
+          <li><a href="#">מדיניות עוגיות</a></li>
+          <li><a href="#">הצהרת נגישות</a></li>
+        </ul>
+      </div>
+    </div>
+    <div class="foot-bottom">
+      <div class="foot-copy">© 2025 YourZon Israel בע"מ · כל הזכויות שמורות</div>
+      <div class="payments">
+        <span class="pay-badge">VISA</span>
+        <span class="pay-badge">MC</span>
+        <span class="pay-badge">PAYPAL</span>
+        <span class="pay-badge">BIT</span>
+        <span class="pay-badge">APPLE PAY</span>
+      </div>
+    </div>
+  </div>
+</footer>
+
+<!-- ═══════════════════════════════════════════════
+     JAVASCRIPT
+═══════════════════════════════════════════════ -->
+<script>
+/* ─── SPLASH ─── */
+window.addEventListener('load', () => {
+  setTimeout(() => {
+    document.getElementById('splash').classList.add('hidden');
+  }, 1700);
+});
+
+/* ─── CURSOR ─── */
+const cur = document.getElementById('cursor');
+const ring = document.getElementById('cursor-ring');
+let cx = 0, cy = 0, rx = 0, ry = 0;
+
+document.addEventListener('mousemove', e => {
+  cx = e.clientX; cy = e.clientY;
+  cur.style.left = cx + 'px';
+  cur.style.top  = cy + 'px';
+});
+
+function ringLoop() {
+  rx += (cx - rx) * 0.12;
+  ry += (cy - ry) * 0.12;
+  ring.style.left = rx + 'px';
+  ring.style.top  = ry + 'px';
+  requestAnimationFrame(ringLoop);
+}
+ringLoop();
+
+/* ─── CANVAS PARTICLES ─── */
+const canvas = document.getElementById('bg-canvas');
+const ctx = canvas.getContext('2d');
+let W, H, particles = [];
+
+function resize() { W = canvas.width = innerWidth; H = canvas.height = innerHeight; }
+window.addEventListener('resize', () => { resize(); initP(); });
+resize();
+
+const PALETTE = ['#6366f1','#8b5cf6','#ec4899','#22d3ee'];
+
+class P {
+  constructor() { this.init(); }
+  init() {
+    this.x  = Math.random() * W;
+    this.y  = Math.random() * H;
+    this.vx = (Math.random() - .5) * .35;
+    this.vy = (Math.random() - .5) * .35;
+    this.r  = Math.random() * 1.8 + .5;
+    this.a  = Math.random() * .45 + .08;
+    this.c  = PALETTE[Math.floor(Math.random() * PALETTE.length)];
+    this.life = Math.random();
+    this.ld = Math.random() * .0018 + .0008;
+  }
+  tick() {
+    this.x += this.vx; this.y += this.vy; this.life += this.ld;
+    if (this.x < 0) this.x = W; if (this.x > W) this.x = 0;
+    if (this.y < 0) this.y = H; if (this.y > H) this.y = 0;
+    if (this.life > 1) this.init();
+  }
+  draw() {
+    ctx.save();
+    ctx.globalAlpha = this.a * Math.sin(this.life * Math.PI);
+    ctx.fillStyle = this.c;
+    ctx.beginPath(); ctx.arc(this.x, this.y, this.r, 0, 6.28); ctx.fill();
+    ctx.restore();
+  }
+}
+
+function initP() {
+  particles = [];
+  const n = Math.min(Math.floor(W * H / 10000), 180);
+  for (let i = 0; i < n; i++) particles.push(new P());
+}
+initP();
+
+function connect() {
+  for (let i = 0; i < particles.length; i++)
+    for (let j = i + 1; j < particles.length; j++) {
+      const dx = particles[i].x - particles[j].x;
+      const dy = particles[i].y - particles[j].y;
+      const d  = Math.sqrt(dx*dx + dy*dy);
+      if (d < 110) {
+        ctx.save();
+        ctx.globalAlpha = (1 - d/110) * .12;
+        ctx.strokeStyle = '#6366f1'; ctx.lineWidth = .6;
+        ctx.beginPath(); ctx.moveTo(particles[i].x, particles[i].y); ctx.lineTo(particles[j].x, particles[j].y); ctx.stroke();
+        ctx.restore();
+      }
+    }
+}
+
+function frame() {
+  ctx.clearRect(0, 0, W, H);
+  particles.forEach(p => { p.tick(); p.draw(); });
+  connect();
+  requestAnimationFrame(frame);
+}
+frame();
+
+/* ─── ORB PARALLAX ─── */
+let mx = 0, my = 0;
+document.addEventListener('mousemove', e => {
+  mx = (e.clientX / innerWidth  - .5) * 2;
+  my = (e.clientY / innerHeight - .5) * 2;
+});
+const orbs = document.querySelectorAll('.orb');
+function orbLoop() {
+  orbs.forEach((o, i) => {
+    const spd = (i + 1) * 18;
+    o.style.transform = `translate(${mx * spd}px, ${my * spd}px)`;
+  });
+  requestAnimationFrame(orbLoop);
+}
+orbLoop();
+
+/* ─── NAVBAR SCROLL ─── */
+window.addEventListener('scroll', () => {
+  document.getElementById('navbar').classList.toggle('scrolled', scrollY > 60);
+});
+
+/* ─── TILT EFFECT ─── */
+function addTilt(el) {
+  el.addEventListener('mousemove', e => {
+    const r = el.getBoundingClientRect();
+    const x = e.clientX - r.left, y = e.clientY - r.top;
+    const cx2 = r.width / 2, cy2 = r.height / 2;
+    const rX = (y - cy2) / cy2 * -14;
+    const rY = (x - cx2) / cx2 * 14;
+    el.style.transform = `perspective(900px) rotateX(${rX}deg) rotateY(${rY}deg) scale(1.05)`;
+    el.style.setProperty('--mx', x + 'px');
+    el.style.setProperty('--my', y + 'px');
+    el.style.transition = 'none';
+  });
+  el.addEventListener('mouseleave', () => {
+    el.style.transition = 'all .55s cubic-bezier(.23,1,.32,1)';
+    el.style.transform = '';
+    el.style.removeProperty('--mx');
+    el.style.removeProperty('--my');
+  });
+}
+document.querySelectorAll('.tilt').forEach(addTilt);
+
+/* ─── SCROLL REVEAL ─── */
+const ro = new IntersectionObserver((entries) => {
+  entries.forEach((e, i) => {
+    if (e.isIntersecting) setTimeout(() => e.target.classList.add('in'), i * 70);
+  });
+}, { threshold: 0.08 });
+document.querySelectorAll('.reveal').forEach(el => ro.observe(el));
+
+/* ─── COUNTER ANIMATION ─── */
+function animCount(el) {
+  const target = +el.dataset.count;
+  let cur2 = 0;
+  const step = target / 70;
+  const t = setInterval(() => {
+    cur2 = Math.min(cur2 + step, target);
+    el.textContent = Math.floor(cur2).toLocaleString('he') + '+';
+    if (cur2 >= target) clearInterval(t);
+  }, 20);
+}
+const cro = new IntersectionObserver(entries => {
+  entries.forEach(e => { if (e.isIntersecting) { animCount(e.target); cro.unobserve(e.target); } });
+}, { threshold: .5 });
+document.querySelectorAll('[data-count]').forEach(el => cro.observe(el));
+
+/* ─── COUNTDOWN TIMER ─── */
+let end = Date.now() + 12*3600000 + 34*60000 + 56000;
+function tick() {
+  const rem = end - Date.now();
+  if (rem < 0) { end = Date.now() + 24*3600000; return; }
+  const h = Math.floor(rem / 3600000);
+  const m = Math.floor((rem % 3600000) / 60000);
+  const s = Math.floor((rem % 60000) / 1000);
+  const ph = document.getElementById('t-h');
+  const pm = document.getElementById('t-m');
+  const ps = document.getElementById('t-s');
+  const fmt = n => String(n).padStart(2,'0');
+  if (ph.textContent !== fmt(h)) { ph.textContent = fmt(h); ph.style.animation='none'; requestAnimationFrame(()=>{ ph.style.animation=''; }); }
+  if (pm.textContent !== fmt(m)) { pm.textContent = fmt(m); pm.style.animation='none'; requestAnimationFrame(()=>{ pm.style.animation=''; }); }
+  ps.textContent = fmt(s);
+}
+setInterval(tick, 1000); tick();
+
+/* ─── PRODUCTS DATA ─── */
+const PRODUCTS = [
+  { name:'iPhone 16 Pro Max', brand:'Apple', price:'4,999', old:'5,990', emoji:'📱', disc:'17%', rating:4.9, reviews:1234 },
+  { name:'MacBook Pro 16" M4', brand:'Apple', price:'8,499', old:'11,990', emoji:'💻', disc:'29%', rating:4.8, reviews:891 },
+  { name:'Sony WH-1000XM5', brand:'Sony', price:'1,299', old:'1,899', emoji:'🎧', disc:'32%', rating:4.9, reviews:2341 },
+  { name:'Apple Watch Ultra 2', brand:'Apple', price:'3,499', old:'4,299', emoji:'⌚', disc:'19%', rating:4.7, reviews:567 },
+  { name:'PlayStation 5 Slim', brand:'Sony', price:'2,099', old:'2,599', emoji:'🎮', disc:'19%', rating:4.9, reviews:3456 },
+  { name:'Samsung Galaxy S25 Ultra', brand:'Samsung', price:'3,999', old:'4,799', emoji:'📲', disc:'17%', rating:4.7, reviews:1089 },
+  { name:'iPad Pro M4 13"', brand:'Apple', price:'4,499', old:'5,499', emoji:'📟', disc:'18%', rating:4.8, reviews:789 },
+  { name:'Google Pixel 9 Pro', brand:'Google', price:'3,299', old:'3,999', emoji:'🤖', disc:'18%', rating:4.6, reviews:432 },
+];
+
+const grid2 = document.getElementById('products-grid');
+PRODUCTS.forEach((p, i) => {
+  const d = document.createElement('div');
+  d.className = 'prod-card reveal';
+  d.style.transitionDelay = (i % 4 * 60) + 'ms';
+  d.innerHTML = `
+    <div class="prod-img">
+      <span style="font-size:4.5rem">${p.emoji}</span>
+      <div class="prod-badge">-${p.disc}</div>
+      <div class="prod-heart">♥</div>
+    </div>
+    <div class="prod-brand">${p.brand}</div>
+    <div class="prod-name">${p.name}</div>
+    <div class="prod-stars">
+      <span class="stars">${'★'.repeat(Math.floor(p.rating))}</span>
+      <span class="rev-count">(${p.reviews.toLocaleString()})</span>
+    </div>
+    <div class="prod-foot">
+      <div class="prod-price">
+        <span class="price-cur">₪${p.price}</span>
+        <span class="price-orig">₪${p.old}</span>
+      </div>
+      <button class="btn-cart">+ הוסף לסל</button>
+    </div>`;
+  grid2.appendChild(d);
+  ro.observe(d);
+  addTilt(d);
+
+  /* shine */
+  d.addEventListener('mousemove', e => {
+    const r = d.getBoundingClientRect();
+    d.style.setProperty('--mx', (e.clientX - r.left) + 'px');
+    d.style.setProperty('--my', (e.clientY - r.top)  + 'px');
+  });
+});
+
+/* ─── ADD TO CART ─── */
+document.addEventListener('click', e => {
+  const btn = e.target.closest('.btn-cart');
+  if (!btn || btn.classList.contains('added')) return;
+  btn.classList.add('added');
+  btn.textContent = '✓ נוסף לסל!';
+  burst(e.clientX, e.clientY);
+  setTimeout(() => { btn.classList.remove('added'); btn.textContent = '+ הוסף לסל'; }, 2000);
+});
+
+function burst(x, y) {
+  for (let i = 0; i < 10; i++) {
+    const dot = document.createElement('div');
+    dot.className = 'burst-dot';
+    dot.style.cssText = `left:${x}px;top:${y}px;`;
+    document.body.appendChild(dot);
+    const angle = (i / 10) * Math.PI * 2;
+    const dist  = 45 + Math.random() * 30;
+    requestAnimationFrame(() => requestAnimationFrame(() => {
+      dot.style.transform = `translate(${Math.cos(angle)*dist - 5}px,${Math.sin(angle)*dist - 5}px)`;
+      dot.style.opacity = '0';
+    }));
+    setTimeout(() => dot.remove(), 950);
+  }
+}
+
+/* ─── TABS ─── */
+document.querySelectorAll('.tab').forEach(t => {
+  t.addEventListener('click', () => {
+    document.querySelectorAll('.tab').forEach(x => x.classList.remove('active'));
+    t.classList.add('active');
+  });
+});
+
+/* ─── REVIEWS DATA ─── */
+const REVIEWS = [
+  { text:'שירות מדהים, המוצר הגיע תוך יום אחד! אריזה מושלמת והמוצר בדיוק כמו שתואר. ממליץ בחום לכולם!', name:'יוסי כהן', loc:'תל אביב', emoji:'👨', stars:5 },
+  { text:'קניתי אייפון 16 פרו ואני בשוק. המחיר הכי זול שמצאתי בישראל, ומשלוח חינם! אין כמו YourZon.', name:'מיכל לוי', loc:'חיפה', emoji:'👩', stars:5 },
+  { text:'אתר מדהים עם אפקטים שלא ראיתי בשום מקום. חוויית קנייה כיפית מאוד, בהחלט אחזור לקנות!', name:'דוד אברמוב', loc:'ירושלים', emoji:'🧑', stars:5 },
+  { text:'האוזניות של סוני הגיעו מהר ובאריזה מקורית. מחיר מעולה לעומת מקומות אחרים. תודה YourZon!', name:'שרה גרין', loc:'ראשל"צ', emoji:'👱‍♀️', stars:4 },
+  { text:'שירות לקוחות פנטסטי! עזרו לי לבחור מחשב נייד שמתאים לצרכים שלי. מקצוענים אמיתיים.', name:'אורי פרץ', loc:'פתח תקווה', emoji:'👨‍💼', stars:5 },
+  { text:'ה-PS5 הגיע עם הדרכה מלאה ושניות לאחר ההזמנה כבר קיבלתי אישור. מהיר ומקצועי!', name:'נועם שפירא', loc:'אשדוד', emoji:'🧔', stars:5 },
+];
+
+const rg = document.getElementById('reviews-grid');
+REVIEWS.forEach((r, i) => {
+  const d = document.createElement('div');
+  d.className = 'review-card reveal';
+  d.style.transitionDelay = (i % 3 * 80) + 'ms';
+  d.innerHTML = `
+    <div class="review-stars">${'★'.repeat(r.stars)}</div>
+    <div class="review-text">"${r.text}"</div>
+    <div class="review-author">
+      <div class="reviewer-avatar">${r.emoji}</div>
+      <div>
+        <div class="reviewer-name">${r.name}</div>
+        <div class="reviewer-loc">${r.loc}</div>
+      </div>
+    </div>`;
+  rg.appendChild(d);
+  ro.observe(d);
+});
+
+/* ─── HERO CARD TILT ─── */
+const hc = document.getElementById('hero-main-card');
+if (hc) {
+  hc.addEventListener('mousemove', e => {
+    const r = hc.getBoundingClientRect();
+    const x = e.clientX - r.left, y = e.clientY - r.top;
+    const rX = (y - r.height/2) / (r.height/2) * -16;
+    const rY = (x - r.width/2)  / (r.width/2)  * 16;
+    hc.style.transform = `perspective(900px) rotateX(${rX}deg) rotateY(${rY}deg) scale(1.06)`;
+    hc.style.transition = 'none';
+  });
+  hc.addEventListener('mouseleave', () => {
+    hc.style.transform = '';
+    hc.style.transition = 'all .55s cubic-bezier(.23,1,.32,1)';
+  });
+}
+</script>
+</body>
+</html>
