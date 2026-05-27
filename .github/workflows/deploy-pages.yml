@@ -1,4 +1,4 @@
-name: 🚀 Deploy YourZon Glassmorphism Site
+name: Enable GitHub Pages for YourZon Site
 
 on:
   push:
@@ -10,50 +10,30 @@ permissions:
   pages: write
   id-token: write
 
-concurrency:
-  group: "pages"
-  cancel-in-progress: false
-
 jobs:
-  deploy:
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
+  enable-pages:
     runs-on: ubuntu-latest
-
     steps:
-      - name: 📂 Checkout gh-pages branch
-        uses: actions/checkout@v4
-        with:
-          ref: gh-pages
-
-      - name: ⚙️ Enable GitHub Pages (if not enabled)
+      - name: Enable GitHub Pages from gh-pages branch
         uses: actions/github-script@v7
         with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
+            const { owner, repo } = context.repo;
             try {
-              await github.rest.repos.createPagesSite({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                source: { branch: 'gh-pages', path: '/' }
+              const result = await github.rest.repos.createPagesSite({
+                owner,
+                repo,
+                source: {
+                  branch: 'gh-pages',
+                  path: '/'
+                }
               });
-              core.info('✅ GitHub Pages enabled!');
+              core.info(`Pages enabled! URL: ${result.data.html_url}`);
             } catch (e) {
               if (e.status === 409) {
-                core.info('ℹ️ Pages already enabled, continuing...');
+                core.info('Pages already configured.');
               } else {
-                core.warning(`Pages setup: ${e.message}`);
+                core.setFailed(`Failed: ${e.message}`);
               }
             }
-
-      - name: 📄 Setup GitHub Pages
-        uses: actions/configure-pages@v4
-
-      - name: 📦 Upload Pages artifact
-        uses: actions/upload-pages-artifact@v3
-        with:
-          path: '.'
-
-      - name: 🌐 Deploy to GitHub Pages
-        id: deployment
-        uses: actions/deploy-pages@v4
