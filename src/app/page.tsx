@@ -1,29 +1,12 @@
 import { CATEGORIES, CITIES } from "@/lib/categories";
-import { supabase } from "@/lib/supabase";
+import { getTopBusinesses, getStats } from "@/lib/db";
 import { BusinessCard } from "@/components/BusinessCard";
 import { SearchBar } from "@/components/SearchBar";
 
-async function getTopBusinesses() {
-  const { data } = await supabase
-    .from("businesses")
-    .select("*")
-    .order("rating", { ascending: false })
-    .limit(12);
-  return data || [];
-}
-
-async function getStats() {
-  const { count: businessCount } = await supabase
-    .from("businesses")
-    .select("*", { count: "exact", head: true });
-  const { count: reviewCount } = await supabase
-    .from("reviews")
-    .select("*", { count: "exact", head: true });
-  return { businessCount: businessCount || 0, reviewCount: reviewCount || 0 };
-}
+export const dynamic = "force-dynamic";
 
 export default async function HomePage() {
-  const [businesses, stats] = await Promise.all([getTopBusinesses(), getStats()]);
+  const [businesses, stats] = await Promise.all([getTopBusinesses(12), getStats()]);
 
   return (
     <div>

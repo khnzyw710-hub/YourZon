@@ -1,16 +1,7 @@
-import { supabase } from "@/lib/supabase";
+import { getBusinessesByCity } from "@/lib/db";
 import { BusinessCard } from "@/components/BusinessCard";
-import { CATEGORIES } from "@/lib/categories";
 
-async function getBusinessesByCity(city: string) {
-  const { data } = await supabase
-    .from("businesses")
-    .select("*")
-    .eq("city", city)
-    .order("rating", { ascending: false })
-    .limit(60);
-  return data || [];
-}
+export const dynamic = "force-dynamic";
 
 export default async function CityPage({ params }: { params: { city: string } }) {
   const city = decodeURIComponent(params.city);
@@ -26,16 +17,11 @@ export default async function CityPage({ params }: { params: { city: string } })
       <h1 className="text-3xl font-bold mb-2">עסקים ב{city}</h1>
       <p className="text-gray-500 mb-8">{businesses.length} עסקים נמצאו</p>
 
-      {/* Category chips */}
       {Object.keys(categoryCounts).length > 0 && (
         <div className="flex flex-wrap gap-2 mb-8">
-          {Object.entries(categoryCounts)
-            .sort((a, b) => b[1] - a[1])
-            .map(([cat, count]) => (
-              <span key={cat} className="bg-white border rounded-full px-3 py-1 text-sm">
-                {cat} ({count})
-              </span>
-            ))}
+          {Object.entries(categoryCounts).sort((a, b) => b[1] - a[1]).map(([cat, count]) => (
+            <span key={cat} className="bg-white border rounded-full px-3 py-1 text-sm">{cat} ({count})</span>
+          ))}
         </div>
       )}
 

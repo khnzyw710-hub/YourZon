@@ -1,19 +1,8 @@
-import { supabase } from "@/lib/supabase";
+import { searchBusinesses } from "@/lib/db";
 import { BusinessCard } from "@/components/BusinessCard";
 import { SearchBar } from "@/components/SearchBar";
 
-async function searchBusinesses(query: string) {
-  const searchTerms = query.trim().split(/\s+/).join(" & ");
-
-  const { data } = await supabase
-    .from("businesses")
-    .select("*")
-    .or(`name.ilike.%${query}%,city.ilike.%${query}%,category.ilike.%${query}%,address.ilike.%${query}%`)
-    .order("rating", { ascending: false })
-    .limit(50);
-
-  return data || [];
-}
+export const dynamic = "force-dynamic";
 
 export default async function SearchPage({ searchParams }: { searchParams: { q?: string } }) {
   const query = searchParams.q || "";
