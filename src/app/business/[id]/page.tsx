@@ -1,9 +1,11 @@
-import { getBusinessBySlug, getReviews } from "@/lib/db";
+import { getBusinessBySlug, getReviews, getAllBusinesses } from "@/lib/db";
 import { notFound } from "next/navigation";
 import type { Review } from "@/lib/types";
-import { ReviewForm } from "@/components/ReviewForm";
 
-export const dynamic = "force-dynamic";
+export async function generateStaticParams() {
+  const businesses = await getAllBusinesses();
+  return businesses.map((b) => ({ id: b.slug }));
+}
 
 export default async function BusinessPage({ params }: { params: { id: string } }) {
   const business = await getBusinessBySlug(params.id);
@@ -38,9 +40,7 @@ export default async function BusinessPage({ params }: { params: { id: string } 
           {business.verified && (
             <span className="inline-block mt-3 bg-green-100 text-green-700 text-sm px-3 py-1 rounded-full">✓ עסק מאומת</span>
           )}
-          {business.description && (
-            <p className="mt-4 text-gray-700 leading-relaxed">{business.description}</p>
-          )}
+          {business.description && <p className="mt-4 text-gray-700 leading-relaxed">{business.description}</p>}
         </div>
       </div>
 
@@ -97,7 +97,6 @@ export default async function BusinessPage({ params }: { params: { id: string } 
 
       <div className="mt-8">
         <h2 className="text-2xl font-bold mb-4">ביקורות ({reviews.length})</h2>
-        <ReviewForm businessId={business.id} />
         <div className="space-y-4 mt-6">
           {reviews.map((review) => (
             <div key={review.id} className="bg-white rounded-xl shadow-sm border p-4">

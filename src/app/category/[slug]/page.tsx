@@ -3,19 +3,15 @@ import { CATEGORIES } from "@/lib/categories";
 import { BusinessCard } from "@/components/BusinessCard";
 import { notFound } from "next/navigation";
 
-export const dynamic = "force-dynamic";
+export async function generateStaticParams() {
+  return CATEGORIES.map((c) => ({ slug: c.slug }));
+}
 
-export default async function CategoryPage({
-  params,
-  searchParams,
-}: {
-  params: { slug: string };
-  searchParams: { sub?: string };
-}) {
+export default async function CategoryPage({ params }: { params: { slug: string } }) {
   const category = CATEGORIES.find((c) => c.slug === params.slug);
   if (!category) notFound();
 
-  const businesses = await getBusinessesByCategory(category.name, searchParams.sub);
+  const businesses = await getBusinessesByCategory(category.name);
 
   return (
     <div className="max-w-7xl mx-auto px-4 py-8">
@@ -25,9 +21,9 @@ export default async function CategoryPage({
       </div>
 
       <div className="flex flex-wrap gap-2 mb-8">
-        <a href={`/category/${category.slug}`} className={`px-4 py-2 rounded-full text-sm border transition-colors ${!searchParams.sub ? "bg-brand-600 text-white border-brand-600" : "bg-white hover:bg-gray-50"}`}>הכל</a>
+        <a href={`/category/${category.slug}`} className="px-4 py-2 rounded-full text-sm border bg-brand-600 text-white border-brand-600">הכל</a>
         {category.subcategories.map((sub) => (
-          <a key={sub.slug} href={`/category/${category.slug}?sub=${encodeURIComponent(sub.name)}`} className={`px-4 py-2 rounded-full text-sm border transition-colors ${searchParams.sub === sub.name ? "bg-brand-600 text-white border-brand-600" : "bg-white hover:bg-gray-50"}`}>{sub.name}</a>
+          <span key={sub.slug} className="px-4 py-2 rounded-full text-sm border bg-white">{sub.name}</span>
         ))}
       </div>
 

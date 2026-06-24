@@ -1,7 +1,10 @@
 import { getBusinessesByCity } from "@/lib/db";
 import { BusinessCard } from "@/components/BusinessCard";
+import { CITIES } from "@/lib/categories";
 
-export const dynamic = "force-dynamic";
+export async function generateStaticParams() {
+  return CITIES.map((city) => ({ city: encodeURIComponent(city) }));
+}
 
 export default async function CityPage({ params }: { params: { city: string } }) {
   const city = decodeURIComponent(params.city);
