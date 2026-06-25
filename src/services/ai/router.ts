@@ -146,9 +146,10 @@ export async function routeToAIStream(
   if (available.length === 0) throw new Error('no_api_keys');
 
   if (available.length === 1) {
+    const solo = available[0]!;
     return {
-      stream: getStream(available[0], messages, query, settings, imageBase64, memory),
-      provider: available[0],
+      stream: getStream(solo, messages, query, settings, imageBase64, memory),
+      provider: solo,
     };
   }
 

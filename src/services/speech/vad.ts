@@ -81,7 +81,8 @@ export async function stopVAD(): Promise<void> {
   _audioBuffer = '';
   try {
     await AudioStreamModule.stopRecording();
-    AudioStreamModule.removeAllListeners('AudioData');
+    // removeAllListeners is optional in some versions of the module
+    (AudioStreamModule as any).removeAllListeners?.('AudioData');
   } catch {}
 }
 

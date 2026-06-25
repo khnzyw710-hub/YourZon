@@ -23,20 +23,22 @@ let _notifId: string | null = null;
 
 export async function showListeningNotification() {
   await setupNotificationChannel();
+
+  const androidExtras = Platform.OS === 'android'
+    ? {
+        channelId: 'zon-listener',
+        color: '#6366f1',
+        priority: Notifications.AndroidNotificationPriority.LOW,
+      }
+    : {};
+
   const id = await Notifications.scheduleNotificationAsync({
     content: {
       title: 'Zon מאזינה',
       body: 'אמור את מילת ההפעלה כדי לשאול',
-      sticky: true,
-      autoDismiss: false,
-      ...(Platform.OS === 'android' && {
-        channelId: 'zon-listener',
-        ongoing: true,
-        priority: Notifications.AndroidNotificationPriority.LOW,
-        smallIcon: 'notification_icon',
-        color: '#6366f1',
-      }),
-    },
+      sound: false,
+      ...androidExtras,
+    } as Notifications.NotificationContentInput,
     trigger: null,
   });
   _notifId = id;

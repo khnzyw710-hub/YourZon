@@ -35,11 +35,13 @@ export function useListening() {
   const silenceTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const activeBuffer = useRef('');
   const isActive = useRef(false);
+  // Ref so resetSilenceTimer always calls the latest submitQuery without becoming a dep
+  const submitQueryRef = useRef<(query: string) => Promise<void>>(async () => {});
 
   const resetSilenceTimer = useCallback(() => {
     clearTimeout(silenceTimer.current!);
     silenceTimer.current = setTimeout(() => {
-      if (isActive.current) submitQuery(activeBuffer.current.trim());
+      if (isActive.current) submitQueryRef.current(activeBuffer.current.trim());
     }, SILENCE_TIMEOUT_MS);
   }, []);
 
@@ -182,6 +184,9 @@ export function useListening() {
     },
     [settings, currentConversation]
   );
+
+  // Keep ref current so resetSilenceTimer always has the latest submitQuery
+  submitQueryRef.current = submitQuery;
 
   const handleTranscript = useCallback(
     (transcript: string, isFinal: boolean) => {

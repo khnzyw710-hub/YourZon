@@ -43,7 +43,6 @@ function _startSession(lang: string) {
     continuous: true,
     requiresOnDeviceRecognition: false,
     addsPunctuation: true,
-    contextualStrings: [],
   };
 
   ExpoSpeechRecognitionModule.start(options);

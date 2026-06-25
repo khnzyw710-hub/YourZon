@@ -13,6 +13,7 @@ let _device: Device | null = null;
 let _connected = false;
 let _frameBuffer = '';
 let _onStatusChange: ((connected: boolean, error?: string) => void) | null = null;
+let _disconnectSub: { remove: () => void } | null = null;
 
 function getManager(): BleManager {
   if (!_manager) _manager = new BleManager();
@@ -67,7 +68,7 @@ export async function connectBLECamera(
     });
     await _device.discoverAllServicesAndCharacteristics();
 
-    _device.onDisconnected(() => {
+    _disconnectSub = _device.onDisconnected(() => {
       _connected = false;
       setBLEFrame(null);
       _onStatusChange?.(false);
@@ -112,6 +113,8 @@ export async function triggerBLECapture(): Promise<void> {
 }
 
 export async function disconnectBLECamera(): Promise<void> {
+  _disconnectSub?.remove();
+  _disconnectSub = null;
   if (_device) {
     await _device.cancelConnection().catch(() => {});
     _device = null;

@@ -32,6 +32,8 @@ yarn-error.*
 
 # local env files
 .env*.local
+.env.local
+.env
 
 # typescript
 *.tsbuildinfo
@@ -42,3 +44,11 @@ yarn-error.*
 .next/
 node_modules/
 out/
+
+# EAS
+.easignore
+
+# Secrets — never commit real API keys
+secrets.json
+google-services.json
+GoogleService-Info.plist

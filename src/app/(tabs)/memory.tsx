@@ -68,9 +68,9 @@ export default function MemoryScreen() {
                   <Text style={styles.factDate}>
                     {format(new Date(item.createdAt), 'dd/MM/yy HH:mm')}
                   </Text>
-                  <View style={styles.impBadge}>
-                    {'⭐'.repeat(Math.min(item.importance, 3))}
-                  </View>
+                  <Text style={styles.impBadge}>
+                    {'★'.repeat(Math.min(item.importance, 3))}
+                  </Text>
                 </View>
               </View>
               <TouchableOpacity onPress={() => handleDelete(item.id)} style={{ padding: 4 }}>
@@ -105,5 +105,5 @@ const styles = StyleSheet.create({
   factText: { color: COLORS.text, fontSize: 14, lineHeight: 20 },
   factMeta: { flexDirection: 'row', alignItems: 'center', gap: 10, marginTop: 4 },
   factDate: { color: COLORS.textDim, fontSize: 11 },
-  impBadge: { fontSize: 10 },
+  impBadge: { fontSize: 10, color: COLORS.warning },
 });

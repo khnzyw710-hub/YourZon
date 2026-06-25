@@ -26,7 +26,6 @@ export async function deliverMorningBriefing(): Promise<void> {
 
   const events = await getTodayEvents();
   const location = await getCurrentLocation();
-  const now = format(new Date(), 'HH:mm');
 
   const context = [
     `היום: ${format(new Date(), 'EEEE, d MMMM yyyy')}`,

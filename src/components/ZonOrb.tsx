@@ -6,8 +6,6 @@ import {
   RadialGradient,
   vec,
   BlurMask,
-  Group,
-  paint,
 } from '@shopify/react-native-skia';
 import Animated, {
   useSharedValue,

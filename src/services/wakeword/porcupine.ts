@@ -11,37 +11,48 @@ export type WakeWordCallback = () => void;
 let _manager: PorcupineManager | null = null;
 let _running = false;
 
-// ─── Built-in keywords map ────────────────────────────────────────────────────
-// Porcupine free tier includes: Alexa, Bumblebee, Computer, Hey Google, Hey Siri,
-// Jarvis, Ok Google, Picovoice, Porcupine, Terminator
-// For a custom Hebrew wake word ("היי זון") the user needs a Picovoice Console account.
-// We default to "Porcupine" (built-in) so the code runs without a custom model.
+// Default built-in keyword when no custom .ppn file is provided.
+// Free tier includes: Alexa, Porcupine, Bumblebee, Terminator, Jarvis, etc.
 const BUILTIN_KEYWORD = BuiltInKeyword.Porcupine;
+
+const wakeWordCb = (onWakeWord: WakeWordCallback) => (keywordIndex: number) => {
+  if (keywordIndex >= 0) onWakeWord();
+};
+
+const errorCb = (onError?: (err: string) => void) =>
+  (error: PorcupineErrors.PorcupineError) => {
+    onError?.(error.message);
+  };
 
 // ─── API ──────────────────────────────────────────────────────────────────────
 export async function startPorcupine(
   accessKey: string,
   onWakeWord: WakeWordCallback,
   onError?: (err: string) => void,
-  customKeywordPath?: string   // path to .ppn file for custom word
+  customKeywordPath?: string   // path to bundled .ppn file for custom wake word
 ): Promise<boolean> {
   if (_running) return true;
 
   try {
-    const keywordConfig = customKeywordPath
-      ? { keywordPath: customKeywordPath, sensitivity: 0.7 }
-      : { keyword: BUILTIN_KEYWORD, sensitivity: 0.7 };
-
-    _manager = await PorcupineManager.fromBuiltInKeywords(
-      accessKey,
-      [BUILTIN_KEYWORD],
-      (keywordIndex: number) => {
-        if (keywordIndex >= 0) onWakeWord();
-      },
-      (error: PorcupineErrors.PorcupineError) => {
-        onError?.(error.message);
-      }
-    );
+    if (customKeywordPath) {
+      // Custom .ppn model (e.g. "היי זון" trained at console.picovoice.ai)
+      _manager = await PorcupineManager.fromKeywordPaths(
+        accessKey,
+        [customKeywordPath],
+        wakeWordCb(onWakeWord),
+        errorCb(onError),
+        [0.7]
+      );
+    } else {
+      // Default built-in keyword — no model file needed
+      _manager = await PorcupineManager.fromBuiltInKeywords(
+        accessKey,
+        [BUILTIN_KEYWORD],
+        wakeWordCb(onWakeWord),
+        errorCb(onError),
+        [0.7]
+      );
+    }
 
     await _manager.start();
     _running = true;
