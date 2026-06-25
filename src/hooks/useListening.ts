@@ -28,6 +28,8 @@ import { detectAndSaveCommitments, buildCommitmentsContextString } from '@/servi
 import { analyzeEmotion, getEmotionSystemPrompt } from '@/services/emotion';
 import { detectFocusCommand, startFocus, stopFocus, isFocusing } from '@/services/focus';
 import { triggerNightlyConsolidation } from '@/services/memory/consolidation';
+import { feedPassiveTranscript, startPassiveMode, stopPassiveMode, isPassiveActive } from '@/services/passive';
+import { buildLifeContextString, startLifeTracking } from '@/services/lifetracker';
 
 export function useListening() {
   const {
@@ -57,6 +59,22 @@ export function useListening() {
       gemini: settings.apiKeys.gemini,
     });
   }, [settings.apiKeys.openai, settings.apiKeys.gemini]);
+
+  // Passive mode lifecycle
+  useEffect(() => {
+    if (settings.passiveMode) {
+      startPassiveMode();
+    } else if (isPassiveActive()) {
+      stopPassiveMode();
+    }
+  }, [settings.passiveMode]);
+
+  // Life tracking lifecycle
+  useEffect(() => {
+    if (settings.lifeTracking) {
+      startLifeTracking().catch(() => {});
+    }
+  }, [settings.lifeTracking]);
 
   const resetSilenceTimer = useCallback(() => {
     clearTimeout(silenceTimer.current!);
@@ -165,6 +183,12 @@ export function useListening() {
       if (settings.spatialContext) {
         const spatial = await buildSpatialContextString().catch(() => '');
         if (spatial) query = `[${spatial}]\n${query}`;
+      }
+
+      // Life tracking context (steps, calories, places visited today)
+      if (settings.lifeTracking) {
+        const lifeCtx = await buildLifeContextString().catch(() => '');
+        if (lifeCtx) query = `${lifeCtx}\n${query}`;
       }
 
       // Calendar context from prefetch
@@ -284,6 +308,11 @@ export function useListening() {
 
       // Language auto-detection
       feedTranscript(transcript);
+
+      // Passive recorder — feed every transcript when enabled
+      if (settings.passiveMode) {
+        feedPassiveTranscript(transcript, !isActive.current);
+      }
 
       // Coaching mode — process every transcript
       if (isCoachingActive()) {

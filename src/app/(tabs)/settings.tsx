@@ -292,6 +292,21 @@ export default function SettingsScreen() {
           hint="מיצוי ישויות (אנשים/פרויקטים/מקומות) וקישורן — מסך זיכרון ← ידע"
         />
 
+        {/* ── Life Tracking ── */}
+        <Section title="מעקב חיים — JARVIS Mode" />
+        <RowToggle
+          label="מעקב מיקום רציף"
+          value={settings.lifeTracking}
+          onValueChange={(v) => updateSettings({ lifeTracking: v })}
+          hint="GPS ברקע — צעדים, קלוריות, מסלול יומי, מקומות שביקרת (מסך היום)"
+        />
+        <RowToggle
+          label="הקלטה פסיבית — אוזן שנייה"
+          value={settings.passiveMode}
+          onValueChange={(v) => updateSettings({ passiveMode: v })}
+          hint="מאזין ומתמלל הכל כשהמיק פעיל — שיחות, שיעורים, פגישות (מסך היום ← שיחות)"
+        />
+
         {/* ── Triggers ── */}
         <Section title="טריגרים מותאמים אישית" />
         <Text style={styles.hint}>כשאתה אומר משפט מסוים, Zon מבצעת פעולה</Text>

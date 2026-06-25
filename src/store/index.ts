@@ -56,6 +56,8 @@ export interface Settings {
   focusMode: boolean;
   emotionAdaptor: boolean;
   knowledgeGraph: boolean;
+  passiveMode: boolean;
+  lifeTracking: boolean;
   apiKeys: {
     anthropic: string;
     openai: string;
@@ -143,6 +145,8 @@ const defaultSettings: Settings = {
   focusMode: true,
   emotionAdaptor: true,
   knowledgeGraph: true,
+  passiveMode: false,
+  lifeTracking: false,
   apiKeys: { anthropic: '', openai: '', gemini: '', grok: '', elevenlabs: '' },
   proactive: {
     morningBriefing: false,

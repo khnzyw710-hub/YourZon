@@ -41,6 +41,13 @@ export default function TabsLayout() {
         }}
       />
       <Tabs.Screen
+        name="lifeview"
+        options={{
+          title: 'היום',
+          tabBarIcon: ({ color, size }) => <Ionicons name="map-outline" color={color} size={size} />,
+        }}
+      />
+      <Tabs.Screen
         name="chronicle"
         options={{
           title: 'כרוניקה',
