@@ -53,6 +53,9 @@ export interface Settings {
   predictiveMode: boolean;
   multiAgentEnabled: boolean;
   spatialContext: boolean;
+  focusMode: boolean;
+  emotionAdaptor: boolean;
+  knowledgeGraph: boolean;
   apiKeys: {
     anthropic: string;
     openai: string;
@@ -137,6 +140,9 @@ const defaultSettings: Settings = {
   predictiveMode: true,
   multiAgentEnabled: true,
   spatialContext: false,
+  focusMode: true,
+  emotionAdaptor: true,
+  knowledgeGraph: true,
   apiKeys: { anthropic: '', openai: '', gemini: '', grok: '', elevenlabs: '' },
   proactive: {
     morningBriefing: false,

@@ -273,6 +273,24 @@ export default function SettingsScreen() {
           onValueChange={(v) => updateSettings({ spatialContext: v })}
           hint="מציין לAI היכן אתה נמצא לפי אשכולות מיקום מוכרים"
         />
+        <RowToggle
+          label="מצב פוקוס Pomodoro"
+          value={settings.focusMode}
+          onValueChange={(v) => updateSettings({ focusMode: v })}
+          hint="אמור 'התחל פוקוס' להפעיל טיימר 25 דק׳ — נרשם בכרוניקה"
+        />
+        <RowToggle
+          label="מתאם רגשות"
+          value={settings.emotionAdaptor}
+          onValueChange={(v) => updateSettings({ emotionAdaptor: v })}
+          hint="מזהה לחץ/שמחה/עייפות ומתאים את טון ה-AI אוטומטית"
+        />
+        <RowToggle
+          label="גרף ידע"
+          value={settings.knowledgeGraph}
+          onValueChange={(v) => updateSettings({ knowledgeGraph: v })}
+          hint="מיצוי ישויות (אנשים/פרויקטים/מקומות) וקישורן — מסך זיכרון ← ידע"
+        />
 
         {/* ── Triggers ── */}
         <Section title="טריגרים מותאמים אישית" />

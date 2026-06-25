@@ -15,6 +15,7 @@ import { matchTrigger } from '@/services/triggers';
 import { executeTool, parseToolCall, TOOL_MANIFEST } from '@/services/agent/tools';
 import { HapticPattern } from '@/services/haptics';
 import { detectLanguage } from '@/services/language/detection';
+import { feedTranscript, setLangChangeCallback, getCurrentLang } from '@/services/language/auto';
 import { isClipboardQuery, getClipboardText } from '@/services/integrations/clipboard';
 import { SILENCE_TIMEOUT_MS, PERSONA_SYSTEM_ADDONS } from '@/constants';
 import { recordConversation, generateDailyJournal } from '@/services/chronicle';
@@ -22,6 +23,11 @@ import { isComplexTask, runMultiAgent } from '@/services/agent/multi-agent';
 import { processCoachingTranscript, isCoachingActive } from '@/services/coaching';
 import { onVoiceStart, onEarlyWords, getPrefetchedContext, refreshMemoryForQuery } from '@/services/predictive/prefetch';
 import { buildSpatialContextString } from '@/services/biometric';
+import { learnFromText as knowledgeLearn } from '@/services/knowledge/graph';
+import { detectAndSaveCommitments, buildCommitmentsContextString } from '@/services/commitments';
+import { analyzeEmotion, getEmotionSystemPrompt } from '@/services/emotion';
+import { detectFocusCommand, startFocus, stopFocus, isFocusing } from '@/services/focus';
+import { triggerNightlyConsolidation } from '@/services/memory/consolidation';
 
 export function useListening() {
   const {
@@ -170,6 +176,17 @@ export function useListening() {
       const personaAddon = PERSONA_SYSTEM_ADDONS[settings.persona] ?? '';
       if (personaAddon) query = `[Tone: ${personaAddon}]\n${query}`;
 
+      // Emotion-adaptive tone
+      if (settings.emotionAdaptor) {
+        const emotionAnalysis = analyzeEmotion(rawQuery);
+        const emotionPrompt = getEmotionSystemPrompt(emotionAnalysis.state);
+        if (emotionPrompt) query = `[${emotionPrompt}]\n${query}`;
+      }
+
+      // Pending commitments context
+      const commitmentsCtx = await buildCommitmentsContextString().catch(() => '');
+      if (commitmentsCtx) query = `${commitmentsCtx}\n${query}`;
+
       addMessage({ id: makeId(), role: 'user', content: rawQuery, timestamp: Date.now() });
 
       try {
@@ -226,6 +243,8 @@ export function useListening() {
             await Promise.all([
               learnFromExchange(rawQuery, full),
               settings.chronicleEnabled ? recordConversation(rawQuery, full, provider) : Promise.resolve(),
+              settings.knowledgeGraph ? knowledgeLearn(rawQuery, full) : Promise.resolve(),
+              detectAndSaveCommitments(rawQuery, full),
             ]);
 
             await HapticPattern.responseArrived();
@@ -233,10 +252,11 @@ export function useListening() {
             setActiveProvider(null);
             setListeningState('passive');
 
-            // Generate journal at end of day (async, non-blocking)
+            // Generate journal + nightly consolidation (async, non-blocking)
             if (settings.chronicleEnabled) {
               generateDailyJournal(settings).catch(() => {});
             }
+            triggerNightlyConsolidation(settings).catch(() => {});
           }
         );
       } catch (err: any) {
@@ -262,9 +282,22 @@ export function useListening() {
       const wake = settings.wakeWord.toLowerCase();
       const stop = settings.stopWord.toLowerCase();
 
+      // Language auto-detection
+      feedTranscript(transcript);
+
       // Coaching mode — process every transcript
       if (isCoachingActive()) {
         processCoachingTranscript(transcript, isActive.current);
+      }
+
+      // Focus command detection (always active)
+      if (isActive.current) {
+        const focusCmd = detectFocusCommand(transcript);
+        if (focusCmd.action === 'start') {
+          startFocus(focusCmd.goal).catch(() => {});
+        } else if (focusCmd.action === 'stop') {
+          stopFocus('voice command').catch(() => {});
+        }
       }
 
       if (lower.includes(stop) && isActive.current) {
@@ -312,9 +345,10 @@ export function useListening() {
     if (isRecognitionRunning()) return;
     setListeningState('passive');
     setMicActive(true);
+    const locale = getCurrentLang() === 'en-US' ? 'en-US' : 'he-IL';
     await startContinuousRecognition(handleTranscript, (err) => {
       console.warn('[Zon] Recognition error:', err);
-    }, 'he-IL');
+    }, locale);
   }, [handleTranscript]);
 
   const stopListening = useCallback(() => {
