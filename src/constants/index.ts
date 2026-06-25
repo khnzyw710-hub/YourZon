@@ -3,7 +3,7 @@ export const COLORS = {
   surface: '#141414',
   surfaceHigh: '#1e1e1e',
   border: '#2a2a2a',
-  accent: '#6366f1',       // indigo
+  accent: '#6366f1',
   accentGlow: '#4f46e5',
   success: '#22c55e',
   warning: '#f59e0b',
@@ -11,10 +11,10 @@ export const COLORS = {
   text: '#f5f5f5',
   textMuted: '#6b7280',
   textDim: '#374151',
-  claude: '#d97706',       // amber - Claude
-  openai: '#10b981',       // emerald - OpenAI
-  gemini: '#3b82f6',       // blue - Gemini
-  grok: '#a855f7',         // purple - Grok
+  claude: '#d97706',
+  openai: '#10b981',
+  gemini: '#3b82f6',
+  grok: '#a855f7',
 } as const;
 
 export const AI_PROVIDERS = {
@@ -46,6 +46,21 @@ export const AI_PROVIDERS = {
 
 export type AIProvider = keyof typeof AI_PROVIDERS;
 
+export const PERSONA_LABELS = {
+  auto: 'אוטומטי',
+  business: 'עסקי',
+  quick: 'מהיר',
+  creative: 'יצירתי',
+  learning: 'למידה',
+} as const;
+
+export const PERSONA_SYSTEM_ADDONS: Record<string, string> = {
+  business: 'Be formal, structured, and data-driven. Focus on actionable insights.',
+  quick: 'Be extremely brief. Answer in 1-2 sentences max.',
+  creative: 'Be imaginative, lateral, and exploratory. Think outside the box.',
+  learning: 'Be pedagogical. Explain with examples and analogies. Check understanding.',
+};
+
 export const DEFAULT_WAKE_WORD = 'היי זון';
 export const DEFAULT_STOP_WORD = 'עצור';
 
@@ -53,5 +68,5 @@ export const BACKGROUND_TASK_NAME = 'ZON_BACKGROUND_LISTENER';
 export const BACKGROUND_FETCH_TASK = 'ZON_BACKGROUND_FETCH';
 
 export const MAX_CONTEXT_MESSAGES = 20;
-export const SILENCE_TIMEOUT_MS = 2500;   // 2.5s silence = end of query
-export const SPEECH_SESSION_TIMEOUT_MS = 55000; // restart recognition before 60s iOS limit
+export const SILENCE_TIMEOUT_MS = 2500;
+export const SPEECH_SESSION_TIMEOUT_MS = 55000;

@@ -1,6 +1,4 @@
 import { useCallback, useRef, useEffect } from 'react';
-import { Platform } from 'react-native';
-import * as Haptics from 'expo-haptics';
 import { useZonStore } from '@/store';
 import {
   startContinuousRecognition,
@@ -8,81 +6,172 @@ import {
   isRecognitionRunning,
 } from '@/services/speech/recognition';
 import { speak, stopSpeaking, isSpeaking } from '@/services/speech/synthesis';
-import { routeToAI } from '@/services/ai/router';
-import { captureFrame } from '@/services/camera';
-import { SILENCE_TIMEOUT_MS } from '@/constants';
+import { routeToAIStream } from '@/services/ai/router';
+import { consumeStream } from '@/services/ai/streaming';
+import { captureFrame, getSceneContext } from '@/services/camera';
+import { recognizeText, hasSignificantText, buildOCRContextPrompt } from '@/services/camera/ocr';
+import { learnFromExchange } from '@/services/memory';
+import { matchTrigger } from '@/services/triggers';
+import { executeTool, parseToolCall, TOOL_MANIFEST } from '@/services/agent/tools';
+import { HapticPattern } from '@/services/haptics';
+import { detectLanguage } from '@/services/language/detection';
+import { isClipboardQuery, getClipboardText } from '@/services/integrations/clipboard';
+import { SILENCE_TIMEOUT_MS, PERSONA_SYSTEM_ADDONS } from '@/constants';
 
 export function useListening() {
   const {
     listeningState,
     setListeningState,
     setLiveTranscript,
-    liveTranscript,
+    setStreamingText,
     settings,
     addMessage,
     currentConversation,
     setActiveProvider,
     setError,
+    setMicActive,
   } = useZonStore();
 
   const silenceTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const activeQueryBuffer = useRef('');
-  const isActiveMode = useRef(false);
+  const activeBuffer = useRef('');
+  const isActive = useRef(false);
 
   const resetSilenceTimer = useCallback(() => {
     clearTimeout(silenceTimer.current!);
     silenceTimer.current = setTimeout(() => {
-      if (isActiveMode.current) {
-        submitQuery(activeQueryBuffer.current.trim());
-      }
+      if (isActive.current) submitQuery(activeBuffer.current.trim());
     }, SILENCE_TIMEOUT_MS);
   }, []);
 
   const submitQuery = useCallback(
-    async (query: string) => {
-      if (!query) return;
+    async (rawQuery: string) => {
+      if (!rawQuery || rawQuery.length < 2) return;
 
-      isActiveMode.current = false;
-      activeQueryBuffer.current = '';
+      isActive.current = false;
+      activeBuffer.current = '';
       setListeningState('processing');
       setLiveTranscript('');
+      setStreamingText('');
 
-      // Save user message
-      addMessage({
-        id: Date.now().toString(36),
-        role: 'user',
-        content: query,
-        timestamp: Date.now(),
-      });
-
-      try {
-        // Optionally capture camera frame
-        const imageBase64 = await captureFrame(settings.camera);
-
-        const messages = currentConversation?.messages ?? [];
-        const { response, provider } = await routeToAI(query, messages, settings, imageBase64 ?? undefined);
-
-        setActiveProvider(provider);
-
-        addMessage({
-          id: (Date.now() + 1).toString(36),
-          role: 'assistant',
-          content: response,
-          provider,
-          timestamp: Date.now(),
-          hasImage: !!imageBase64,
+      // Check custom triggers first
+      const trigger = await matchTrigger(rawQuery);
+      if (trigger) {
+        await HapticPattern.triggerMatch();
+        if (trigger.action.type === 'ai_query') {
+          await submitQuery(trigger.action.prompt);
+          return;
+        }
+        const result = await executeTool({
+          name: trigger.action.type as any,
+          args: trigger.action as any,
         });
-
+        addMessage({ id: makeId(), role: 'user', content: rawQuery, timestamp: Date.now() });
+        addMessage({ id: makeId(), role: 'assistant', content: result.output, timestamp: Date.now() });
         if (settings.ttsEnabled) {
-          await speak(response, settings.ttsRate, () => {
-            setActiveProvider(null);
-            setListeningState('passive');
-          });
+          await speak(result.output, settings.ttsRate, () => setListeningState('passive'),
+            settings.ttsProvider === 'elevenlabs' ? settings.apiKeys.elevenlabs : undefined,
+            settings.elevenLabsVoiceId
+          );
         } else {
-          setActiveProvider(null);
           setListeningState('passive');
         }
+        return;
+      }
+
+      // Build context
+      let query = rawQuery;
+      let imageBase64: string | undefined;
+
+      // Camera frame
+      const frame = await captureFrame(settings.camera);
+      if (frame) {
+        imageBase64 = frame;
+        // Also try OCR
+        const ocr = await recognizeText(frame);
+        if (hasSignificantText(ocr)) {
+          query = buildOCRContextPrompt(ocr.text, rawQuery);
+        }
+      }
+
+      // Clipboard context
+      if (isClipboardQuery(rawQuery)) {
+        const clipText = await getClipboardText();
+        if (clipText) query = `${rawQuery}\nClipboard: "${clipText}"`;
+      }
+
+      // Scene context (passive visual monitor)
+      const scene = getSceneContext();
+      if (scene && !frame) {
+        query = `[Visual context: ${scene}]\n${query}`;
+      }
+
+      // Persona addon
+      const personaAddon = PERSONA_SYSTEM_ADDONS[settings.persona] ?? '';
+      if (personaAddon) query = `[Tone: ${personaAddon}]\n${query}`;
+
+      addMessage({ id: makeId(), role: 'user', content: rawQuery, timestamp: Date.now() });
+
+      try {
+        const messages = currentConversation?.messages ?? [];
+        const { stream, provider } = await routeToAIStream(query, messages, settings, imageBase64);
+
+        setActiveProvider(provider);
+        await HapticPattern.processingStarted();
+
+        let fullResponse = '';
+
+        await consumeStream(
+          stream,
+          (text) => setStreamingText(text),
+          async (sentence) => {
+            if (!settings.ttsEnabled) return;
+            await new Promise<void>((resolve) => {
+              speak(
+                sentence,
+                settings.ttsRate,
+                resolve,
+                settings.ttsProvider === 'elevenlabs' ? settings.apiKeys.elevenlabs : undefined,
+                settings.elevenLabsVoiceId
+              );
+            });
+          },
+          async (full) => {
+            fullResponse = full;
+
+            // Check if AI wants to call a tool
+            const toolCall = parseToolCall(full);
+            if (toolCall) {
+              const result = await executeTool(toolCall);
+              if (!result.success || full.includes(result.output)) {
+                // already spoken
+              } else {
+                await speak(
+                  result.output,
+                  settings.ttsRate,
+                  undefined,
+                  settings.ttsProvider === 'elevenlabs' ? settings.apiKeys.elevenlabs : undefined
+                );
+              }
+            }
+
+            addMessage({
+              id: makeId(),
+              role: 'assistant',
+              content: full,
+              provider,
+              timestamp: Date.now(),
+              hasImage: !!imageBase64,
+            });
+
+            await learnFromExchange(rawQuery, full);
+            await HapticPattern.responseArrived();
+            setStreamingText('');
+            setActiveProvider(null);
+            setListeningState('passive');
+          }
+        );
       } catch (err: any) {
+        await HapticPattern.error();
         const msg =
           err?.message === 'no_api_keys'
             ? 'אין מפתחות API. הגדר אותם בהגדרות.'
@@ -102,33 +191,28 @@ export function useListening() {
       const wake = settings.wakeWord.toLowerCase();
       const stop = settings.stopWord.toLowerCase();
 
-      // Check stop word (works even during active mode)
-      if (lower.includes(stop) && isActiveMode.current) {
+      if (lower.includes(stop) && isActive.current) {
         clearTimeout(silenceTimer.current!);
-        if (isSpeaking()) {
-          stopSpeaking();
-        }
-        isActiveMode.current = false;
-        activeQueryBuffer.current = '';
+        stopSpeaking();
+        isActive.current = false;
+        activeBuffer.current = '';
+        HapticPattern.stopWordDetected();
         setListeningState('passive');
         setLiveTranscript('');
         return;
       }
 
-      if (!isActiveMode.current) {
-        // Passive mode — watch for wake word
+      if (!isActive.current) {
         if (lower.includes(wake)) {
-          isActiveMode.current = true;
+          isActive.current = true;
           setListeningState('active');
-          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-          // Strip the wake word from the transcript
+          HapticPattern.wakeWordDetected();
           const after = transcript.slice(lower.indexOf(wake) + wake.length).trim();
-          activeQueryBuffer.current = after;
+          activeBuffer.current = after;
           if (after) resetSilenceTimer();
         }
       } else {
-        // Active mode — accumulate transcript
-        activeQueryBuffer.current = transcript;
+        activeBuffer.current = transcript;
         resetSilenceTimer();
       }
     },
@@ -138,37 +222,31 @@ export function useListening() {
   const startListening = useCallback(async () => {
     if (isRecognitionRunning()) return;
     setListeningState('passive');
-    await startContinuousRecognition(
-      handleTranscript,
-      (err) => {
-        console.warn('Recognition error:', err);
-      },
-      'he-IL'
-    );
+    setMicActive(true);
+    await startContinuousRecognition(handleTranscript, (err) => {
+      console.warn('[Zon] Recognition error:', err);
+    }, 'he-IL');
   }, [handleTranscript]);
 
   const stopListening = useCallback(() => {
     stopContinuousRecognition();
     clearTimeout(silenceTimer.current!);
-    isActiveMode.current = false;
-    activeQueryBuffer.current = '';
+    isActive.current = false;
+    activeBuffer.current = '';
     setListeningState('off');
+    setMicActive(false);
     setLiveTranscript('');
+    setStreamingText('');
   }, []);
 
   const toggleListening = useCallback(() => {
-    if (listeningState === 'off') {
-      startListening();
-    } else {
-      stopListening();
-    }
+    if (listeningState === 'off') startListening();
+    else stopListening();
   }, [listeningState, startListening, stopListening]);
 
-  return {
-    listeningState,
-    liveTranscript,
-    startListening,
-    stopListening,
-    toggleListening,
-  };
+  return { listeningState, toggleListening, startListening, stopListening };
+}
+
+function makeId() {
+  return Date.now().toString(36) + Math.random().toString(36).slice(2);
 }

@@ -14,10 +14,11 @@
     "expo-router": "~4.0.0",
     "react": "19.0.0",
     "react-native": "0.79.1",
+
     "expo-speech-recognition": "^0.3.4",
     "expo-speech": "~13.1.0",
-    "expo-camera": "~16.1.0",
     "expo-av": "~15.1.0",
+    "expo-camera": "~16.1.0",
     "expo-task-manager": "~12.0.5",
     "expo-background-task": "~1.1.5",
     "expo-keep-awake": "~14.1.4",
@@ -27,21 +28,35 @@
     "expo-system-ui": "~4.0.7",
     "expo-haptics": "~14.1.4",
     "expo-network": "~7.1.4",
-    "expo-permissions": "~15.0.0",
+    "expo-secure-store": "~14.0.1",
+    "expo-sqlite": "~15.2.10",
+    "expo-calendar": "~14.1.4",
+    "expo-contacts": "~14.1.4",
+    "expo-location": "~18.1.5",
+    "expo-media-library": "~17.1.6",
+    "expo-sharing": "~13.0.1",
+    "expo-print": "~14.0.1",
+    "expo-notifications": "~0.29.14",
+    "expo-modules-core": "~2.4.4",
+
+    "@mykin-ai/expo-audio-stream": "^1.6.0",
+    "@picovoice/porcupine-react-native": "^3.0.5",
+    "react-native-ble-plx": "^3.2.0",
+    "@shopify/react-native-skia": "^1.5.0",
+    "@react-native-ml-kit/text-recognition": "^0.2.0",
+
     "@react-native-async-storage/async-storage": "2.1.2",
-    "zustand": "^5.0.3",
     "react-native-safe-area-context": "5.4.0",
     "react-native-screens": "~4.5.0",
     "react-native-reanimated": "~3.17.5",
     "react-native-gesture-handler": "~2.21.2",
     "@shopify/flash-list": "1.7.3",
+    "zustand": "^5.0.3",
     "date-fns": "^4.1.0"
   },
   "devDependencies": {
     "@babel/core": "^7.25.0",
     "@types/react": "~19.0.0",
-    "@types/react-native": "^0.73.0",
-    "typescript": "^5.7.0",
-    "expo-module-scripts": "~4.0.4"
+    "typescript": "^5.7.0"
   }
 }

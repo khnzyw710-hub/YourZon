@@ -7,6 +7,7 @@
     "icon": "./assets/icon.png",
     "scheme": "zon",
     "userInterfaceStyle": "dark",
+    "newArchEnabled": true,
     "splash": {
       "image": "./assets/splash.png",
       "resizeMode": "contain",
@@ -16,10 +17,14 @@
       "supportsTablet": true,
       "bundleIdentifier": "com.zon.app",
       "infoPlist": {
-        "NSMicrophoneUsageDescription": "Zon needs access to your microphone for continuous voice listening.",
-        "NSSpeechRecognitionUsageDescription": "Zon uses speech recognition to understand what you say.",
+        "NSMicrophoneUsageDescription": "Zon needs microphone access for continuous voice listening.",
+        "NSSpeechRecognitionUsageDescription": "Zon uses speech recognition to understand commands.",
         "NSCameraUsageDescription": "Zon uses your camera to understand your visual environment.",
-        "UIBackgroundModes": ["audio", "processing", "fetch"]
+        "NSCalendarsUsageDescription": "Zon reads your calendar for proactive context.",
+        "NSContactsUsageDescription": "Zon identifies contacts you mention by name.",
+        "NSLocationWhenInUseUsageDescription": "Zon uses your location for contextual awareness.",
+        "NSPhotoLibraryUsageDescription": "Zon can analyze photos you share.",
+        "UIBackgroundModes": ["audio", "processing", "fetch", "remote-notification"]
       }
     },
     "android": {
@@ -41,7 +46,18 @@
         "BLUETOOTH_CONNECT",
         "BLUETOOTH_SCAN",
         "ACCESS_WIFI_STATE",
-        "CHANGE_WIFI_STATE"
+        "CHANGE_WIFI_STATE",
+        "READ_CALENDAR",
+        "WRITE_CALENDAR",
+        "READ_CONTACTS",
+        "SEND_SMS",
+        "ACCESS_FINE_LOCATION",
+        "READ_EXTERNAL_STORAGE",
+        "VIBRATE",
+        "WAKE_LOCK",
+        "RECEIVE_BOOT_COMPLETED",
+        "SYSTEM_ALERT_WINDOW",
+        "POST_NOTIFICATIONS"
       ]
     },
     "plugins": [
@@ -60,7 +76,36 @@
         }
       ],
       "expo-av",
-      "expo-background-task"
+      "expo-background-task",
+      "expo-secure-store",
+      "expo-sqlite",
+      [
+        "expo-calendar",
+        {
+          "calendarPermission": "Zon reads your calendar for proactive assistance."
+        }
+      ],
+      [
+        "expo-contacts",
+        {
+          "contactsPermission": "Zon uses your contacts to recognize people you mention."
+        }
+      ],
+      [
+        "expo-location",
+        {
+          "locationAlwaysAndWhenInUsePermission": "Zon uses location for context awareness."
+        }
+      ],
+      "expo-notifications",
+      [
+        "react-native-ble-plx",
+        {
+          "isBackgroundEnabled": true,
+          "modes": ["peripheral", "central"],
+          "bluetoothAlwaysPermission": "Zon connects to Bluetooth cameras."
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true

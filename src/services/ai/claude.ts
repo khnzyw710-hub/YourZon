@@ -1,19 +1,38 @@
 import { Message } from '@/store';
 
+const SYSTEM = `You are Zon, an always-on AI life assistant running on a mobile device. You listen continuously and help with anything. Be concise and natural — responses are read aloud via TTS. Use short sentences. Avoid markdown formatting.`;
+
+// ─── Non-streaming (single response) ─────────────────────────────────────────
 export async function askClaude(
   messages: Message[],
   query: string,
   apiKey: string,
-  imageBase64?: string
+  imageBase64?: string,
+  contextMemory?: string
 ): Promise<string> {
-  const systemPrompt = `You are Zon, an always-on AI life assistant. You listen continuously and help with anything — analysis, coding, explanations, planning. Be concise and direct. Speak naturally as your responses will be read aloud.`;
+  let collected = '';
+  for await (const chunk of streamClaude(messages, query, apiKey, imageBase64, contextMemory)) {
+    collected += chunk;
+  }
+  return collected;
+}
 
-  const formattedMessages = messages
+// ─── Streaming ────────────────────────────────────────────────────────────────
+export async function* streamClaude(
+  messages: Message[],
+  query: string,
+  apiKey: string,
+  imageBase64?: string,
+  contextMemory?: string
+): AsyncGenerator<string> {
+  const systemPrompt = contextMemory
+    ? `${SYSTEM}\n\nRelevant memory about this user:\n${contextMemory}`
+    : SYSTEM;
+
+  const history = messages
     .filter((m) => m.role === 'user' || m.role === 'assistant')
-    .map((m) => ({
-      role: m.role,
-      content: m.content,
-    }));
+    .slice(-20)
+    .map((m) => ({ role: m.role, content: m.content }));
 
   const userContent: any[] = imageBase64
     ? [
@@ -22,7 +41,7 @@ export async function askClaude(
       ]
     : [{ type: 'text', text: query }];
 
-  formattedMessages.push({ role: 'user', content: userContent as any });
+  history.push({ role: 'user', content: userContent as any });
 
   const res = await fetch('https://api.anthropic.com/v1/messages', {
     method: 'POST',
@@ -35,11 +54,30 @@ export async function askClaude(
       model: 'claude-sonnet-4-6',
       max_tokens: 1024,
       system: systemPrompt,
-      messages: formattedMessages,
+      messages: history,
+      stream: true,
     }),
   });
 
-  if (!res.ok) throw new Error(`Claude API error: ${res.status}`);
-  const data = await res.json();
-  return data.content?.[0]?.text ?? '';
+  if (!res.ok) throw new Error(`Claude ${res.status}`);
+
+  const reader = res.body!.getReader();
+  const decoder = new TextDecoder();
+
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
+
+    const text = decoder.decode(value);
+    for (const line of text.split('\n')) {
+      if (!line.startsWith('data: ')) continue;
+      const data = line.slice(6).trim();
+      if (data === '[DONE]') return;
+      try {
+        const json = JSON.parse(data);
+        const delta = json.delta?.text ?? json.delta?.value ?? '';
+        if (delta) yield delta;
+      } catch {}
+    }
+  }
 }
