@@ -1,0 +1,69 @@
+{
+  "expo": {
+    "name": "Zon",
+    "slug": "zon",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "scheme": "zon",
+    "userInterfaceStyle": "dark",
+    "splash": {
+      "image": "./assets/splash.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#0a0a0a"
+    },
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.zon.app",
+      "infoPlist": {
+        "NSMicrophoneUsageDescription": "Zon needs access to your microphone for continuous voice listening.",
+        "NSSpeechRecognitionUsageDescription": "Zon uses speech recognition to understand what you say.",
+        "NSCameraUsageDescription": "Zon uses your camera to understand your visual environment.",
+        "UIBackgroundModes": ["audio", "processing", "fetch"]
+      }
+    },
+    "android": {
+      "package": "com.zon.app",
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#0a0a0a"
+      },
+      "permissions": [
+        "RECORD_AUDIO",
+        "CAMERA",
+        "FOREGROUND_SERVICE",
+        "FOREGROUND_SERVICE_MICROPHONE",
+        "FOREGROUND_SERVICE_CAMERA",
+        "RECEIVE_BOOT_COMPLETED",
+        "INTERNET",
+        "ACCESS_NETWORK_STATE",
+        "BLUETOOTH",
+        "BLUETOOTH_CONNECT",
+        "BLUETOOTH_SCAN",
+        "ACCESS_WIFI_STATE",
+        "CHANGE_WIFI_STATE"
+      ]
+    },
+    "plugins": [
+      "expo-router",
+      [
+        "expo-speech-recognition",
+        {
+          "microphonePermission": "Zon needs microphone access for voice listening.",
+          "speechRecognitionPermission": "Zon uses speech recognition to understand commands."
+        }
+      ],
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "Zon uses your camera to understand your environment."
+        }
+      ],
+      "expo-av",
+      "expo-background-task"
+    ],
+    "experiments": {
+      "typedRoutes": true
+    }
+  }
+}
