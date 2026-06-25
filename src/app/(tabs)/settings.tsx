@@ -235,6 +235,45 @@ export default function SettingsScreen() {
           value={settings.proactive.calendarReminders}
           onValueChange={(v) => updateSettings({ proactive: { ...settings.proactive, calendarReminders: v } })} />
 
+        {/* ── Intelligence Features ── */}
+        <Section title="תכונות מתקדמות" />
+        <RowToggle
+          label="כרוניקה (יומן חיים)"
+          value={settings.chronicleEnabled}
+          onValueChange={(v) => updateSettings({ chronicleEnabled: v })}
+          hint="מעקב שיחות, אנשים ומיומנויות — יומן יום-יומי אוטומטי"
+        />
+        <RowToggle
+          label="מצב אימון שיחה"
+          value={settings.coachingMode}
+          onValueChange={(v) => updateSettings({ coachingMode: v })}
+          hint="טיפים בזמן אמת על דפוסי שיחה, יחס דיבור ועוד"
+        />
+        <RowToggle
+          label="אינטליגנציה סביבתית"
+          value={settings.ambientMode}
+          onValueChange={(v) => updateSettings({ ambientMode: v })}
+          hint="זיהוי אוטומטי: פגישה / שיחה / נהיגה / שינה"
+        />
+        <RowToggle
+          label="טעינה מוקדמת חכמה (Predictive)"
+          value={settings.predictiveMode}
+          onValueChange={(v) => updateSettings({ predictiveMode: v })}
+          hint="טוען זיכרון ויומן מיד עם זיהוי קול — תגובות מהירות יותר"
+        />
+        <RowToggle
+          label="סוכן מרובה (Multi-Agent)"
+          value={settings.multiAgentEnabled}
+          onValueChange={(v) => updateSettings({ multiAgentEnabled: v })}
+          hint="משימות מורכבות מפוצלות ומבוצעות במקביל"
+        />
+        <RowToggle
+          label="הקשר מרחבי (GPS)"
+          value={settings.spatialContext}
+          onValueChange={(v) => updateSettings({ spatialContext: v })}
+          hint="מציין לAI היכן אתה נמצא לפי אשכולות מיקום מוכרים"
+        />
+
         {/* ── Triggers ── */}
         <Section title="טריגרים מותאמים אישית" />
         <Text style={styles.hint}>כשאתה אומר משפט מסוים, Zon מבצעת פעולה</Text>

@@ -1,7 +1,7 @@
 import React, { useEffect, useRef } from 'react';
 import {
   View, Text, StyleSheet, TouchableOpacity,
-  ScrollView, Platform, Pressable,
+  ScrollView, Platform, Pressable, Animated,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useKeepAwake } from 'expo-keep-awake';
@@ -12,6 +12,7 @@ import { useListening } from '@/hooks/useListening';
 import { useRecognitionEvents } from '@/services/speech/recognition';
 import { setCameraRef, startSceneMonitor, stopSceneMonitor } from '@/services/camera';
 import { showListeningNotification, hideListeningNotification, registerBackgroundTask } from '@/services/background';
+import { getContextIcon, getContextLabel } from '@/services/ambient';
 import ZonOrb from '@/components/ZonOrb';
 import StatusIndicator from '@/components/StatusIndicator';
 import ConversationBubble from '@/components/ConversationBubble';
@@ -26,6 +27,8 @@ export default function MainScreen() {
     listeningState, liveTranscript, streamingText,
     activeProvider, currentConversation, newConversation,
     errorMessage, setError, settings, micActive,
+    coachingTip, setCoachingTip, agentProgress,
+    ambientContext, proactiveMessage, setProactiveMessage,
   } = useZonStore((s) => ({
     listeningState: s.listeningState,
     liveTranscript: s.liveTranscript,
@@ -37,6 +40,12 @@ export default function MainScreen() {
     setError: s.setError,
     settings: s.settings,
     micActive: s.micActive,
+    coachingTip: s.coachingTip,
+    setCoachingTip: s.setCoachingTip,
+    agentProgress: s.agentProgress,
+    ambientContext: s.ambientContext,
+    proactiveMessage: s.proactiveMessage,
+    setProactiveMessage: s.setProactiveMessage,
   }));
 
   const { toggleListening } = useListening();
@@ -103,7 +112,15 @@ export default function MainScreen() {
       {/* Header */}
       <View style={styles.header}>
         <Text style={styles.logo}>ZON</Text>
-        <StatusIndicator state={listeningState} activeProvider={activeProvider} />
+        <View style={styles.headerCenter}>
+          <StatusIndicator state={listeningState} activeProvider={activeProvider} />
+          {settings.ambientMode && ambientContext !== 'idle' && (
+            <View style={styles.ambientChip}>
+              <Ionicons name={getContextIcon(ambientContext) as any} color={COLORS.textMuted} size={11} />
+              <Text style={styles.ambientLabel}>{getContextLabel(ambientContext)}</Text>
+            </View>
+          )}
+        </View>
         <TouchableOpacity onPress={newConversation} style={styles.iconBtn}>
           <Ionicons name="add-circle-outline" color={COLORS.textMuted} size={22} />
         </TouchableOpacity>
@@ -115,6 +132,33 @@ export default function MainScreen() {
           <Text style={styles.errorText} numberOfLines={2}>{errorMessage}</Text>
           <Ionicons name="close-circle" color={COLORS.danger} size={18} />
         </Pressable>
+      )}
+
+      {/* Proactive message banner */}
+      {proactiveMessage && (
+        <Pressable style={styles.proactiveBanner} onPress={() => setProactiveMessage(null)}>
+          <Ionicons name="sparkles" color={COLORS.accent} size={14} />
+          <Text style={styles.proactiveText} numberOfLines={2}>{proactiveMessage}</Text>
+          <Ionicons name="close" color={COLORS.textDim} size={14} />
+        </Pressable>
+      )}
+
+      {/* Agent progress indicator */}
+      {agentProgress && (
+        <View style={styles.agentProgressBar}>
+          <View style={styles.agentProgressHeader}>
+            <Ionicons name="git-network-outline" color={COLORS.warning} size={13} />
+            <Text style={styles.agentProgressPhase}>
+              {agentProgress.phase === 'planning' ? 'מתכנן...'
+                : agentProgress.phase === 'executing' ? `מבצע ${agentProgress.completedTasks}/${agentProgress.totalTasks}`
+                : agentProgress.phase === 'synthesizing' ? 'מסכם...'
+                : 'סיים'}
+            </Text>
+          </View>
+          {agentProgress.currentTask && (
+            <Text style={styles.agentCurrentTask} numberOfLines={1}>{agentProgress.currentTask}</Text>
+          )}
+        </View>
       )}
 
       {/* Conversation */}
@@ -160,6 +204,19 @@ export default function MainScreen() {
         <View style={styles.liveBox}>
           <Text style={styles.liveText} numberOfLines={2}>{liveTranscript}</Text>
         </View>
+      )}
+
+      {/* Coaching tip overlay */}
+      {coachingTip && settings.coachingMode && (
+        <Pressable style={[styles.coachingTip, coachingTip.urgency === 'high' && styles.coachingTipHigh]}
+          onPress={() => setCoachingTip(null)}>
+          <Ionicons
+            name="chatbubble-ellipses-outline"
+            color={coachingTip.urgency === 'high' ? COLORS.warning : COLORS.accent}
+            size={14}
+          />
+          <Text style={styles.coachingTipText} numberOfLines={2}>{coachingTip.text}</Text>
+        </Pressable>
       )}
 
       {/* Orb + Controls */}
@@ -225,4 +282,40 @@ const styles = StyleSheet.create({
 
   controls: { alignItems: 'center', paddingBottom: 16, paddingTop: 8, gap: 10 },
   stateLabel: { fontSize: 13, fontWeight: '500' },
+
+  headerCenter: { flex: 1, alignItems: 'center', gap: 4 },
+  ambientChip: {
+    flexDirection: 'row', alignItems: 'center', gap: 4,
+    backgroundColor: COLORS.surface, borderRadius: 10,
+    paddingHorizontal: 8, paddingVertical: 2,
+  },
+  ambientLabel: { fontSize: 10, color: COLORS.textMuted },
+
+  proactiveBanner: {
+    flexDirection: 'row', alignItems: 'center', gap: 8,
+    backgroundColor: `${COLORS.accent}12`, paddingHorizontal: 14, paddingVertical: 9,
+    borderBottomWidth: 1, borderBottomColor: COLORS.border,
+  },
+  proactiveText: { flex: 1, color: COLORS.accent, fontSize: 13 },
+
+  agentProgressBar: {
+    backgroundColor: `${COLORS.warning}10`, paddingHorizontal: 14, paddingVertical: 8,
+    borderBottomWidth: 1, borderBottomColor: COLORS.border,
+  },
+  agentProgressHeader: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  agentProgressPhase: { fontSize: 12, color: COLORS.warning, fontWeight: '600' },
+  agentCurrentTask: { fontSize: 11, color: COLORS.textDim, marginTop: 2 },
+
+  coachingTip: {
+    flexDirection: 'row', alignItems: 'center', gap: 8,
+    backgroundColor: `${COLORS.accent}14`,
+    marginHorizontal: 12, marginBottom: 6,
+    padding: 10, borderRadius: 10,
+    borderLeftWidth: 2, borderLeftColor: COLORS.accent,
+  },
+  coachingTipHigh: {
+    backgroundColor: `${COLORS.warning}14`,
+    borderLeftColor: COLORS.warning,
+  },
+  coachingTipText: { flex: 1, color: COLORS.text, fontSize: 13 },
 });

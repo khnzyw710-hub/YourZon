@@ -2,6 +2,9 @@ import { create } from 'zustand';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as SecureStore from 'expo-secure-store';
 import { AIProvider, DEFAULT_WAKE_WORD, DEFAULT_STOP_WORD, MAX_CONTEXT_MESSAGES } from '@/constants';
+import type { AmbientContext } from '@/services/ambient';
+import type { AgentProgress } from '@/services/agent/multi-agent';
+import type { CoachingTip } from '@/services/coaching';
 
 export type ListeningState = 'off' | 'passive' | 'active' | 'processing';
 export type Persona = 'auto' | 'business' | 'quick' | 'creative' | 'learning';
@@ -34,15 +37,22 @@ export interface Settings {
   stopWord: string;
   preferredProvider: AIProvider | 'auto';
   smartRoute: boolean;
-  raceMode: boolean;             // send to all providers, first wins
+  raceMode: boolean;
   ttsEnabled: boolean;
   ttsRate: number;
   ttsProvider: 'native' | 'elevenlabs';
   elevenLabsVoiceId: string;
   persona: Persona;
   camera: CameraConfig;
-  sceneMonitor: boolean;         // continuous passive visual analysis
-  porcupineKey: string;          // Picovoice access key
+  sceneMonitor: boolean;
+  porcupineKey: string;
+  // Feature flags
+  coachingMode: boolean;
+  ambientMode: boolean;
+  chronicleEnabled: boolean;
+  predictiveMode: boolean;
+  multiAgentEnabled: boolean;
+  spatialContext: boolean;
   apiKeys: {
     anthropic: string;
     openai: string;
@@ -88,6 +98,22 @@ interface ZonStore {
   micActive: boolean;
   setMicActive: (v: boolean) => void;
 
+  // Ambient intelligence
+  ambientContext: AmbientContext;
+  setAmbientContext: (ctx: AmbientContext) => void;
+
+  // Multi-agent progress
+  agentProgress: AgentProgress | null;
+  setAgentProgress: (p: AgentProgress | null) => void;
+
+  // Coaching
+  coachingTip: CoachingTip | null;
+  setCoachingTip: (tip: CoachingTip | null) => void;
+
+  // Proactive message (from ambient/chronicle)
+  proactiveMessage: string | null;
+  setProactiveMessage: (msg: string | null) => void;
+
   loadSettings: () => Promise<void>;
 }
 
@@ -105,13 +131,13 @@ const defaultSettings: Settings = {
   camera: { type: 'none', active: false },
   sceneMonitor: false,
   porcupineKey: '',
-  apiKeys: {
-    anthropic: '',
-    openai: '',
-    gemini: '',
-    grok: '',
-    elevenlabs: '',
-  },
+  coachingMode: false,
+  ambientMode: false,
+  chronicleEnabled: true,
+  predictiveMode: true,
+  multiAgentEnabled: true,
+  spatialContext: false,
+  apiKeys: { anthropic: '', openai: '', gemini: '', grok: '', elevenlabs: '' },
   proactive: {
     morningBriefing: false,
     morningHour: 7,
@@ -125,7 +151,6 @@ function makeId() {
   return Date.now().toString(36) + Math.random().toString(36).slice(2);
 }
 
-// ─── SecureStore helpers ──────────────────────────────────────────────────────
 const SECURE_OPTS: SecureStore.SecureStoreOptions = {
   keychainAccessible: SecureStore.AFTER_FIRST_UNLOCK,
 };
@@ -225,6 +250,18 @@ export const useZonStore = create<ZonStore>((set, get) => ({
 
   micActive: false,
   setMicActive: (micActive) => set({ micActive }),
+
+  ambientContext: 'idle',
+  setAmbientContext: (ambientContext) => set({ ambientContext }),
+
+  agentProgress: null,
+  setAgentProgress: (agentProgress) => set({ agentProgress }),
+
+  coachingTip: null,
+  setCoachingTip: (coachingTip) => set({ coachingTip }),
+
+  proactiveMessage: null,
+  setProactiveMessage: (proactiveMessage) => set({ proactiveMessage }),
 
   loadSettings: async () => {
     try {

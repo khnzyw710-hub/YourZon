@@ -5,18 +5,23 @@ import {
   stopContinuousRecognition,
   isRecognitionRunning,
 } from '@/services/speech/recognition';
-import { speak, stopSpeaking, isSpeaking } from '@/services/speech/synthesis';
+import { speak, stopSpeaking } from '@/services/speech/synthesis';
 import { routeToAIStream } from '@/services/ai/router';
 import { consumeStream } from '@/services/ai/streaming';
 import { captureFrame, getSceneContext } from '@/services/camera';
 import { recognizeText, hasSignificantText, buildOCRContextPrompt } from '@/services/camera/ocr';
-import { learnFromExchange } from '@/services/memory';
+import { learnFromExchange, setEmbeddingApiKeys } from '@/services/memory';
 import { matchTrigger } from '@/services/triggers';
 import { executeTool, parseToolCall, TOOL_MANIFEST } from '@/services/agent/tools';
 import { HapticPattern } from '@/services/haptics';
 import { detectLanguage } from '@/services/language/detection';
 import { isClipboardQuery, getClipboardText } from '@/services/integrations/clipboard';
 import { SILENCE_TIMEOUT_MS, PERSONA_SYSTEM_ADDONS } from '@/constants';
+import { recordConversation, generateDailyJournal } from '@/services/chronicle';
+import { isComplexTask, runMultiAgent } from '@/services/agent/multi-agent';
+import { processCoachingTranscript, isCoachingActive } from '@/services/coaching';
+import { onVoiceStart, onEarlyWords, getPrefetchedContext, refreshMemoryForQuery } from '@/services/predictive/prefetch';
+import { buildSpatialContextString } from '@/services/biometric';
 
 export function useListening() {
   const {
@@ -30,13 +35,22 @@ export function useListening() {
     setActiveProvider,
     setError,
     setMicActive,
+    setAgentProgress,
+    setCoachingTip,
   } = useZonStore();
 
   const silenceTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const activeBuffer = useRef('');
   const isActive = useRef(false);
-  // Ref so resetSilenceTimer always calls the latest submitQuery without becoming a dep
   const submitQueryRef = useRef<(query: string) => Promise<void>>(async () => {});
+
+  // Keep embedding API keys synced
+  useEffect(() => {
+    setEmbeddingApiKeys({
+      openai: settings.apiKeys.openai,
+      gemini: settings.apiKeys.gemini,
+    });
+  }, [settings.apiKeys.openai, settings.apiKeys.gemini]);
 
   const resetSilenceTimer = useCallback(() => {
     clearTimeout(silenceTimer.current!);
@@ -60,7 +74,7 @@ export function useListening() {
       if (trigger) {
         await HapticPattern.triggerMatch();
         if (trigger.action.type === 'ai_query') {
-          await submitQuery(trigger.action.prompt);
+          await submitQueryRef.current(trigger.action.prompt);
           return;
         }
         const result = await executeTool({
@@ -80,15 +94,49 @@ export function useListening() {
         return;
       }
 
-      // Build context
+      // ── Multi-agent routing for complex tasks ──────────────────────────────
+      if (settings.multiAgentEnabled && isComplexTask(rawQuery)) {
+        addMessage({ id: makeId(), role: 'user', content: rawQuery, timestamp: Date.now() });
+        await HapticPattern.processingStarted();
+
+        await runMultiAgent(
+          rawQuery,
+          settings,
+          (progress) => setAgentProgress(progress),
+          (text) => setStreamingText(text),
+          async (fullText) => {
+            addMessage({
+              id: makeId(), role: 'assistant', content: fullText,
+              timestamp: Date.now(),
+            });
+            setAgentProgress(null);
+            setStreamingText('');
+            if (settings.ttsEnabled) {
+              speak(fullText, settings.ttsRate, () => setListeningState('passive'),
+                settings.ttsProvider === 'elevenlabs' ? settings.apiKeys.elevenlabs : undefined,
+                settings.elevenLabsVoiceId
+              );
+            } else {
+              setListeningState('passive');
+            }
+            await recordConversation(rawQuery, fullText);
+            await learnFromExchange(rawQuery, fullText);
+          }
+        );
+        return;
+      }
+
+      // ── Standard AI query ──────────────────────────────────────────────────
       let query = rawQuery;
       let imageBase64: string | undefined;
+
+      // Get pre-fetched context (likely already loaded from onVoiceStart)
+      const prefetched = await getPrefetchedContext();
 
       // Camera frame
       const frame = await captureFrame(settings.camera);
       if (frame) {
         imageBase64 = frame;
-        // Also try OCR
         const ocr = await recognizeText(frame);
         if (hasSignificantText(ocr)) {
           query = buildOCRContextPrompt(ocr.text, rawQuery);
@@ -101,10 +149,21 @@ export function useListening() {
         if (clipText) query = `${rawQuery}\nClipboard: "${clipText}"`;
       }
 
-      // Scene context (passive visual monitor)
+      // Scene context
       const scene = getSceneContext();
       if (scene && !frame) {
         query = `[Visual context: ${scene}]\n${query}`;
+      }
+
+      // Spatial context (if enabled)
+      if (settings.spatialContext) {
+        const spatial = await buildSpatialContextString().catch(() => '');
+        if (spatial) query = `[${spatial}]\n${query}`;
+      }
+
+      // Calendar context from prefetch
+      if (prefetched.calendarContext) {
+        query = `[${prefetched.calendarContext}]\n${query}`;
       }
 
       // Persona addon
@@ -115,7 +174,16 @@ export function useListening() {
 
       try {
         const messages = currentConversation?.messages ?? [];
-        const { stream, provider } = await routeToAIStream(query, messages, settings, imageBase64);
+
+        // Use prefetched memory or refresh for specific query
+        const memory = prefetched.memoryContext || await refreshMemoryForQuery(rawQuery);
+
+        // Inject TOOL_MANIFEST into query for agent-capable models
+        const augmentedQuery = `${query}\n\n${TOOL_MANIFEST}`;
+
+        const { stream, provider } = await routeToAIStream(
+          augmentedQuery, messages, settings, imageBase64
+        );
 
         setActiveProvider(provider);
         await HapticPattern.processingStarted();
@@ -129,9 +197,7 @@ export function useListening() {
             if (!settings.ttsEnabled) return;
             await new Promise<void>((resolve) => {
               speak(
-                sentence,
-                settings.ttsRate,
-                resolve,
+                sentence, settings.ttsRate, resolve,
                 settings.ttsProvider === 'elevenlabs' ? settings.apiKeys.elevenlabs : undefined,
                 settings.elevenLabsVoiceId
               );
@@ -140,36 +206,37 @@ export function useListening() {
           async (full) => {
             fullResponse = full;
 
-            // Check if AI wants to call a tool
+            // Tool call detection
             const toolCall = parseToolCall(full);
             if (toolCall) {
               const result = await executeTool(toolCall);
-              if (!result.success || full.includes(result.output)) {
-                // already spoken
-              } else {
+              if (result.success && !full.includes(result.output)) {
                 await speak(
-                  result.output,
-                  settings.ttsRate,
-                  undefined,
+                  result.output, settings.ttsRate, undefined,
                   settings.ttsProvider === 'elevenlabs' ? settings.apiKeys.elevenlabs : undefined
                 );
               }
             }
 
             addMessage({
-              id: makeId(),
-              role: 'assistant',
-              content: full,
-              provider,
-              timestamp: Date.now(),
-              hasImage: !!imageBase64,
+              id: makeId(), role: 'assistant', content: full,
+              provider, timestamp: Date.now(), hasImage: !!imageBase64,
             });
 
-            await learnFromExchange(rawQuery, full);
+            await Promise.all([
+              learnFromExchange(rawQuery, full),
+              settings.chronicleEnabled ? recordConversation(rawQuery, full, provider) : Promise.resolve(),
+            ]);
+
             await HapticPattern.responseArrived();
             setStreamingText('');
             setActiveProvider(null);
             setListeningState('passive');
+
+            // Generate journal at end of day (async, non-blocking)
+            if (settings.chronicleEnabled) {
+              generateDailyJournal(settings).catch(() => {});
+            }
           }
         );
       } catch (err: any) {
@@ -185,7 +252,6 @@ export function useListening() {
     [settings, currentConversation]
   );
 
-  // Keep ref current so resetSilenceTimer always has the latest submitQuery
   submitQueryRef.current = submitQuery;
 
   const handleTranscript = useCallback(
@@ -195,6 +261,11 @@ export function useListening() {
       const lower = transcript.toLowerCase();
       const wake = settings.wakeWord.toLowerCase();
       const stop = settings.stopWord.toLowerCase();
+
+      // Coaching mode — process every transcript
+      if (isCoachingActive()) {
+        processCoachingTranscript(transcript, isActive.current);
+      }
 
       if (lower.includes(stop) && isActive.current) {
         clearTimeout(silenceTimer.current!);
@@ -212,16 +283,29 @@ export function useListening() {
           isActive.current = true;
           setListeningState('active');
           HapticPattern.wakeWordDetected();
+
+          // Trigger predictive prefetch immediately on wake word
+          if (settings.predictiveMode) {
+            onVoiceStart();
+          }
+
           const after = transcript.slice(lower.indexOf(wake) + wake.length).trim();
           activeBuffer.current = after;
-          if (after) resetSilenceTimer();
+          if (after) {
+            if (settings.predictiveMode) onEarlyWords(after);
+            resetSilenceTimer();
+          }
         }
       } else {
         activeBuffer.current = transcript;
+        // Feed early words to predictive engine
+        if (settings.predictiveMode && transcript.split(/\s+/).length >= 3) {
+          onEarlyWords(transcript);
+        }
         resetSilenceTimer();
       }
     },
-    [settings.wakeWord, settings.stopWord, resetSilenceTimer]
+    [settings.wakeWord, settings.stopWord, settings.predictiveMode, resetSilenceTimer]
   );
 
   const startListening = useCallback(async () => {

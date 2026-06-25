@@ -1,4 +1,11 @@
 import * as SQLite from 'expo-sqlite';
+import {
+  cosineSimilarity,
+  bm25Score,
+  generateEmbedding,
+  serializeEmbedding,
+  deserializeEmbedding,
+} from './embeddings';
 
 // ─── DB setup ──────────────────────────────────────────────────────────────────
 let _db: SQLite.SQLiteDatabase | null = null;
@@ -11,10 +18,16 @@ async function getDB(): Promise<SQLite.SQLiteDatabase> {
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       content TEXT NOT NULL,
       keywords TEXT NOT NULL,
+      embedding TEXT,
       importance INTEGER DEFAULT 1,
       created_at INTEGER NOT NULL,
       accessed_at INTEGER NOT NULL,
       access_count INTEGER DEFAULT 0
+    );
+    CREATE TABLE IF NOT EXISTS embeddings_meta (
+      id INTEGER PRIMARY KEY,
+      model TEXT NOT NULL,
+      dims INTEGER NOT NULL
     );
   `);
   return _db;
@@ -27,9 +40,10 @@ export interface MemoryFact {
   keywords: string[];
   importance: number;
   createdAt: number;
+  similarity?: number;
 }
 
-// ─── Keyword extraction (lightweight, no model needed) ────────────────────────
+// ─── Keyword extraction ───────────────────────────────────────────────────────
 const STOP_WORDS = new Set([
   'אני', 'אתה', 'הוא', 'היא', 'אנחנו', 'הם', 'את', 'של', 'עם',
   'על', 'אל', 'לא', 'כן', 'כי', 'אם', 'גם', 'רק', 'כבר', 'עוד',
@@ -46,7 +60,6 @@ function extractKeywords(text: string): string[] {
     .slice(0, 8);
 }
 
-// ─── Detect if a message contains a saveable fact ────────────────────────────
 const FACT_PATTERNS = [
   /אני (אוהב|שונא|גר|עובד|לומד|מתעסק|יש לי|קונה|עושה)/i,
   /שמי|השם שלי|נקרא/i,
@@ -61,38 +74,72 @@ export function isFactWorthy(text: string): boolean {
   return FACT_PATTERNS.some((p) => p.test(text));
 }
 
-// ─── Save a fact ──────────────────────────────────────────────────────────────
+// ─── API key cache for embeddings ─────────────────────────────────────────────
+let _apiKeys: { openai: string; gemini: string } = { openai: '', gemini: '' };
+export function setEmbeddingApiKeys(keys: { openai: string; gemini: string }) {
+  _apiKeys = keys;
+}
+
+// ─── Save a fact (with embedding if keys available) ───────────────────────────
 export async function saveFact(content: string, importance = 1): Promise<void> {
   const db = await getDB();
   const keywords = extractKeywords(content);
   const now = Date.now();
+
+  // Generate embedding asynchronously (fire and forget if it fails)
+  let embeddingStr: string | null = null;
+  try {
+    const vec = await generateEmbedding(content, _apiKeys);
+    if (vec) embeddingStr = serializeEmbedding(vec);
+  } catch {}
+
   await db.runAsync(
-    'INSERT INTO facts (content, keywords, importance, created_at, accessed_at) VALUES (?, ?, ?, ?, ?)',
-    [content, JSON.stringify(keywords), importance, now, now]
+    'INSERT INTO facts (content, keywords, embedding, importance, created_at, accessed_at) VALUES (?, ?, ?, ?, ?, ?)',
+    [content, JSON.stringify(keywords), embeddingStr, importance, now, now]
   );
 }
 
-// ─── Retrieve relevant facts for a query ─────────────────────────────────────
-export async function recallFacts(query: string, limit = 5): Promise<MemoryFact[]> {
+// ─── Recall facts using semantic + BM25 hybrid scoring ───────────────────────
+export async function recallFacts(query: string, limit = 6): Promise<MemoryFact[]> {
   const db = await getDB();
+  const rows = await db.getAllAsync<any>(
+    'SELECT * FROM facts ORDER BY importance DESC, accessed_at DESC LIMIT 300'
+  );
+  if (rows.length === 0) return [];
+
+  // Try to get query embedding for semantic search
+  let queryEmbedding: number[] | null = null;
+  try {
+    queryEmbedding = await generateEmbedding(query, _apiKeys);
+  } catch {}
+
   const queryKeywords = extractKeywords(query);
-  if (queryKeywords.length === 0) return [];
 
-  const rows = await db.getAllAsync<any>('SELECT * FROM facts ORDER BY importance DESC, accessed_at DESC LIMIT 200');
-
-  // Score each fact by keyword overlap
   const scored = rows.map((row: any) => {
     const factKeywords: string[] = JSON.parse(row.keywords ?? '[]');
-    const overlap = queryKeywords.filter((k) => factKeywords.includes(k)).length;
-    return { ...row, score: overlap + row.importance };
+    const factEmbedding = deserializeEmbedding(row.embedding);
+
+    let score = 0;
+
+    if (queryEmbedding && factEmbedding) {
+      // Semantic similarity is primary signal when available
+      score = cosineSimilarity(queryEmbedding, factEmbedding) * 10;
+    } else {
+      // BM25 fallback
+      score = bm25Score(query, row.content) * 0.5;
+      // Keyword overlap bonus
+      const overlap = queryKeywords.filter((k) => factKeywords.includes(k)).length;
+      score += overlap;
+    }
+
+    return { ...row, score: score + row.importance * 0.1 };
   });
 
   const top = scored
-    .filter((r) => r.score > 0)
+    .filter((r) => r.score > 0.05)
     .sort((a, b) => b.score - a.score)
     .slice(0, limit);
 
-  // Update access stats
   for (const row of top) {
     await db.runAsync(
       'UPDATE facts SET accessed_at = ?, access_count = access_count + 1 WHERE id = ?',
@@ -106,24 +153,22 @@ export async function recallFacts(query: string, limit = 5): Promise<MemoryFact[
     keywords: JSON.parse(r.keywords ?? '[]'),
     importance: r.importance,
     createdAt: r.created_at,
+    similarity: parseFloat(r.score.toFixed(3)),
   }));
 }
 
-// ─── Format memory for AI injection ──────────────────────────────────────────
 export async function buildMemoryContext(query: string): Promise<string> {
   const facts = await recallFacts(query);
   if (facts.length === 0) return '';
   return facts.map((f) => `- ${f.content}`).join('\n');
 }
 
-// ─── Auto-extract and save facts from an assistant exchange ──────────────────
 export async function learnFromExchange(userMsg: string, _assistantMsg: string): Promise<void> {
   if (isFactWorthy(userMsg)) {
     await saveFact(userMsg.slice(0, 200), 2);
   }
 }
 
-// ─── List all facts (for memory viewer screen) ────────────────────────────────
 export async function listAllFacts(): Promise<MemoryFact[]> {
   const db = await getDB();
   const rows = await db.getAllAsync<any>('SELECT * FROM facts ORDER BY importance DESC, created_at DESC');
