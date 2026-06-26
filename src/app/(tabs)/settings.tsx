@@ -11,6 +11,10 @@ import { watchCalendarForReminders } from '@/services/integrations/proactive';
 import { getTriggers, saveTrigger, deleteTrigger, makeTriggerId } from '@/services/triggers';
 import type { Trigger } from '@/services/triggers';
 import type { Persona } from '@/store';
+import { loadUserProfile, saveUserProfile } from '@/services/user/profile';
+import type { UserGender, ResponseLength, FormalityLevel } from '@/services/user/profile';
+import { VOICE_LABELS } from '@/services/tts/openai';
+import type { OpenAIVoice } from '@/services/tts/openai';
 
 // ─── Small helpers ─────────────────────────────────────────────────────────────
 const Section = ({ title }: { title: string }) => (
@@ -62,6 +66,12 @@ export default function SettingsScreen() {
   const [newPhrase, setNewPhrase] = useState('');
   const [newPrompt, setNewPrompt] = useState('');
 
+  // User profile state
+  const [profileName, setProfileName] = useState('');
+  const [profileGender, setProfileGender] = useState<UserGender>('neutral');
+  const [profileResponseLength, setProfileResponseLength] = useState<ResponseLength>('medium');
+  const [profileFormality, setProfileFormality] = useState<FormalityLevel>('friendly');
+
   const apiProviders: Array<{ id: AIProvider; field: keyof typeof settings.apiKeys }> = [
     { id: 'claude', field: 'anthropic' },
     { id: 'openai', field: 'openai' },
@@ -71,6 +81,12 @@ export default function SettingsScreen() {
 
   useEffect(() => {
     getTriggers().then(setTriggers);
+    loadUserProfile().then((p) => {
+      setProfileName(p.name);
+      setProfileGender(p.gender);
+      setProfileResponseLength(p.responseLength);
+      setProfileFormality(p.formality);
+    });
   }, []);
 
   const saveWords = () => {
@@ -100,6 +116,16 @@ export default function SettingsScreen() {
     setTriggers(await getTriggers());
   };
 
+  const saveProfile = async () => {
+    await saveUserProfile({
+      name: profileName.trim(),
+      gender: profileGender,
+      responseLength: profileResponseLength,
+      formality: profileFormality,
+    });
+    Alert.alert('פרופיל נשמר ✓');
+  };
+
   const personas: Persona[] = ['auto', 'business', 'quick', 'creative', 'learning'];
 
   return (
@@ -121,6 +147,66 @@ export default function SettingsScreen() {
           hint="אופציונלי — Wake word מקומי מהיר (picovoice.ai/console)" />
         <TouchableOpacity style={styles.btn} onPress={saveWords}>
           <Text style={styles.btnText}>שמור מילות הפעלה</Text>
+        </TouchableOpacity>
+
+        {/* ── User Profile ── */}
+        <Section title="פרופיל משתמש" />
+        <RowInput label="שם" value={profileName} onChangeText={setProfileName}
+          placeholder="מה שמך?" hint="ZON ישתמש בשמך ויתאים את הדקדוק העברי" />
+
+        <Text style={styles.rowLabel}>מגדר (לדקדוק עברי)</Text>
+        <View style={styles.chipRow}>
+          {([
+            { val: 'male' as UserGender, label: 'בן' },
+            { val: 'female' as UserGender, label: 'בת' },
+            { val: 'neutral' as UserGender, label: 'ניטרלי' },
+          ]).map(({ val, label }) => (
+            <TouchableOpacity
+              key={val}
+              style={[styles.chip, profileGender === val && styles.chipActive]}
+              onPress={() => setProfileGender(val)}
+            >
+              <Text style={[styles.chipText, profileGender === val && styles.chipTextActive]}>{label}</Text>
+            </TouchableOpacity>
+          ))}
+        </View>
+
+        <Text style={styles.rowLabel}>אורך תשובות</Text>
+        <View style={styles.chipRow}>
+          {([
+            { val: 'short' as ResponseLength, label: 'קצר' },
+            { val: 'medium' as ResponseLength, label: 'בינוני' },
+            { val: 'detailed' as ResponseLength, label: 'מפורט' },
+          ]).map(({ val, label }) => (
+            <TouchableOpacity
+              key={val}
+              style={[styles.chip, profileResponseLength === val && styles.chipActive]}
+              onPress={() => setProfileResponseLength(val)}
+            >
+              <Text style={[styles.chipText, profileResponseLength === val && styles.chipTextActive]}>{label}</Text>
+            </TouchableOpacity>
+          ))}
+        </View>
+
+        <Text style={styles.rowLabel}>סגנון דיבור</Text>
+        <View style={styles.chipRow}>
+          {([
+            { val: 'casual' as FormalityLevel, label: 'סלנג' },
+            { val: 'friendly' as FormalityLevel, label: 'ידידותי' },
+            { val: 'formal' as FormalityLevel, label: 'רשמי' },
+          ]).map(({ val, label }) => (
+            <TouchableOpacity
+              key={val}
+              style={[styles.chip, profileFormality === val && styles.chipActive]}
+              onPress={() => setProfileFormality(val)}
+            >
+              <Text style={[styles.chipText, profileFormality === val && styles.chipTextActive]}>{label}</Text>
+            </TouchableOpacity>
+          ))}
+        </View>
+
+        <TouchableOpacity style={styles.btn} onPress={saveProfile}>
+          <Text style={styles.btnText}>שמור פרופיל</Text>
         </TouchableOpacity>
 
         {/* ── AI Settings ── */}
@@ -172,18 +258,36 @@ export default function SettingsScreen() {
         <View style={styles.row}>
           <Text style={styles.rowLabel}>ספק קול</Text>
           <View style={styles.chipRow}>
-            {(['native', 'elevenlabs'] as const).map((p) => (
+            {(['native', 'elevenlabs', 'openai'] as const).map((p) => (
               <TouchableOpacity
                 key={p}
                 style={[styles.chip, settings.ttsProvider === p && styles.chipActive]}
                 onPress={() => updateSettings({ ttsProvider: p })}
               >
                 <Text style={[styles.chipText, settings.ttsProvider === p && styles.chipTextActive]}>
-                  {p === 'native' ? 'מובנה' : 'ElevenLabs'}
+                  {p === 'native' ? 'מובנה' : p === 'elevenlabs' ? 'ElevenLabs' : 'OpenAI HD'}
                 </Text>
               </TouchableOpacity>
             ))}
           </View>
+          {settings.ttsProvider === 'openai' && (
+            <>
+              <Text style={[styles.rowLabel, { marginTop: 10 }]}>קול OpenAI</Text>
+              <View style={styles.chipRow}>
+                {(Object.keys(VOICE_LABELS) as OpenAIVoice[]).map((v) => (
+                  <TouchableOpacity
+                    key={v}
+                    style={[styles.chip, settings.openaiTtsVoice === v && styles.chipActive]}
+                    onPress={() => updateSettings({ openaiTtsVoice: v })}
+                  >
+                    <Text style={[styles.chipText, settings.openaiTtsVoice === v && styles.chipTextActive]}>
+                      {VOICE_LABELS[v]}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            </>
+          )}
         </View>
 
         {/* ── Camera ── */}

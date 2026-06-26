@@ -49,18 +49,19 @@ function getStream(
   query: string,
   settings: Settings,
   imageBase64: string | undefined,
-  memory: string
+  memory: string,
+  systemPrompt?: string
 ): AsyncGenerator<string> {
   const { anthropic, openai, gemini, grok } = settings.apiKeys;
   switch (provider) {
     case 'claude':
-      return streamClaude(messages, query, anthropic, imageBase64, memory);
+      return streamClaude(messages, query, anthropic, imageBase64, memory, systemPrompt);
     case 'openai':
-      return streamOpenAI(messages, query, openai, imageBase64, memory);
+      return streamOpenAI(messages, query, openai, imageBase64, memory, systemPrompt);
     case 'gemini':
-      return streamGemini(messages, query, gemini, imageBase64, memory);
+      return streamGemini(messages, query, gemini, imageBase64, memory, systemPrompt);
     case 'grok':
-      return streamGrok(messages, query, grok, memory);
+      return streamGrok(messages, query, grok, memory, systemPrompt);
   }
 }
 
@@ -71,7 +72,8 @@ async function raceProviders(
   query: string,
   settings: Settings,
   imageBase64: string | undefined,
-  memory: string
+  memory: string,
+  systemPrompt?: string
 ): Promise<{ stream: AsyncGenerator<string>; provider: AIProvider }> {
   return new Promise((resolve, reject) => {
     let resolved = false;
@@ -81,7 +83,7 @@ async function raceProviders(
       // Start the stream and try to get the first chunk
       (async () => {
         try {
-          const gen = getStream(provider, messages, query, settings, imageBase64, memory);
+          const gen = getStream(provider, messages, query, settings, imageBase64, memory, systemPrompt);
           const first = await gen.next();
           if (!resolved && !first.done) {
             resolved = true;
@@ -106,14 +108,15 @@ export async function routeToAIStream(
   query: string,
   messages: Message[],
   settings: Settings,
-  imageBase64?: string
+  imageBase64?: string,
+  systemPrompt?: string
 ): Promise<{ stream: AsyncGenerator<string>; provider: AIProvider }> {
   const memory = await buildMemoryContext(query);
 
   if (settings.preferredProvider !== 'auto') {
     const provider = settings.preferredProvider as AIProvider;
     return {
-      stream: getStream(provider, messages, query, settings, imageBase64, memory),
+      stream: getStream(provider, messages, query, settings, imageBase64, memory, systemPrompt),
       provider,
     };
   }
@@ -121,7 +124,7 @@ export async function routeToAIStream(
   if (!settings.smartRoute) {
     const provider = defaultProvider(settings);
     return {
-      stream: getStream(provider, messages, query, settings, imageBase64, memory),
+      stream: getStream(provider, messages, query, settings, imageBase64, memory, systemPrompt),
       provider,
     };
   }
@@ -130,7 +133,7 @@ export async function routeToAIStream(
   const keywordPick = keywordRoute(query, settings);
   if (keywordPick) {
     return {
-      stream: getStream(keywordPick, messages, query, settings, imageBase64, memory),
+      stream: getStream(keywordPick, messages, query, settings, imageBase64, memory, systemPrompt),
       provider: keywordPick,
     };
   }
@@ -148,12 +151,12 @@ export async function routeToAIStream(
   if (available.length === 1) {
     const solo = available[0]!;
     return {
-      stream: getStream(solo, messages, query, settings, imageBase64, memory),
+      stream: getStream(solo, messages, query, settings, imageBase64, memory, systemPrompt),
       provider: solo,
     };
   }
 
-  return raceProviders(available, messages, query, settings, imageBase64, memory);
+  return raceProviders(available, messages, query, settings, imageBase64, memory, systemPrompt);
 }
 
 // ─── Non-streaming wrapper (for agent tools, fact extraction, etc.) ───────────

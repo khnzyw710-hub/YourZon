@@ -6,10 +6,11 @@ export async function askGrok(
   messages: Message[],
   query: string,
   apiKey: string,
-  contextMemory?: string
+  contextMemory?: string,
+  systemPrompt?: string
 ): Promise<string> {
   let collected = '';
-  for await (const chunk of streamGrok(messages, query, apiKey, contextMemory)) {
+  for await (const chunk of streamGrok(messages, query, apiKey, contextMemory, systemPrompt)) {
     collected += chunk;
   }
   return collected;
@@ -19,9 +20,11 @@ export async function* streamGrok(
   messages: Message[],
   query: string,
   apiKey: string,
-  contextMemory?: string
+  contextMemory?: string,
+  systemPrompt?: string
 ): AsyncGenerator<string> {
-  const system = contextMemory ? `${SYSTEM}\n\nUser memory:\n${contextMemory}` : SYSTEM;
+  const baseSystem = systemPrompt ?? SYSTEM;
+  const system = contextMemory ? `${baseSystem}\n\nUser memory:\n${contextMemory}` : baseSystem;
   const history = messages.slice(-20).map((m) => ({ role: m.role, content: m.content }));
 
   const res = await fetch('https://api.x.ai/v1/chat/completions', {

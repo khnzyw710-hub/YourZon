@@ -1,5 +1,6 @@
 import * as Speech from 'expo-speech';
 import { Audio } from 'expo-av';
+import { speakOpenAI, stopOpenAITTS } from '@/services/tts/openai';
 
 let _isSpeaking = false;
 let _sound: Audio.Sound | null = null;
@@ -85,11 +86,15 @@ export async function speak(
   rate = 1.0,
   onDone?: () => void,
   elevenLabsKey?: string,
-  voiceId = 'EXAVITQu4vr4xnSDxMaL'   // default: "Bella" multilingual voice
+  voiceId = 'EXAVITQu4vr4xnSDxMaL',   // default: "Bella" multilingual voice
+  openaiKey?: string,
+  openaiVoice = 'alloy'
 ): Promise<void> {
   if (_isSpeaking) await stopSpeaking();
 
-  if (elevenLabsKey) {
+  if (openaiKey) {
+    await speakOpenAI(text, openaiKey, openaiVoice as any, rate, onDone);
+  } else if (elevenLabsKey) {
     await speakElevenLabs(text, elevenLabsKey, voiceId, onDone);
   } else {
     speakNative(text, rate, onDone);
@@ -99,6 +104,7 @@ export async function speak(
 export async function stopSpeaking(): Promise<void> {
   _isSpeaking = false;
   await Speech.stop();
+  await stopOpenAITTS();
   if (_sound) {
     await _sound.stopAsync().catch(() => {});
     await _sound.unloadAsync().catch(() => {});

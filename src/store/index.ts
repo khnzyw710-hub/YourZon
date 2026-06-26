@@ -40,8 +40,9 @@ export interface Settings {
   raceMode: boolean;
   ttsEnabled: boolean;
   ttsRate: number;
-  ttsProvider: 'native' | 'elevenlabs';
+  ttsProvider: 'native' | 'elevenlabs' | 'openai';
   elevenLabsVoiceId: string;
+  openaiTtsVoice: string;
   persona: Persona;
   camera: CameraConfig;
   sceneMonitor: boolean;
@@ -132,6 +133,7 @@ const defaultSettings: Settings = {
   ttsRate: 1.0,
   ttsProvider: 'native',
   elevenLabsVoiceId: 'EXAVITQu4vr4xnSDxMaL',
+  openaiTtsVoice: 'alloy',
   persona: 'auto',
   camera: { type: 'none', active: false },
   sceneMonitor: false,

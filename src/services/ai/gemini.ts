@@ -7,10 +7,11 @@ export async function askGemini(
   query: string,
   apiKey: string,
   imageBase64?: string,
-  contextMemory?: string
+  contextMemory?: string,
+  systemPrompt?: string
 ): Promise<string> {
   let collected = '';
-  for await (const chunk of streamGemini(messages, query, apiKey, imageBase64, contextMemory)) {
+  for await (const chunk of streamGemini(messages, query, apiKey, imageBase64, contextMemory, systemPrompt)) {
     collected += chunk;
   }
   return collected;
@@ -21,11 +22,13 @@ export async function* streamGemini(
   query: string,
   apiKey: string,
   imageBase64?: string,
-  contextMemory?: string
+  contextMemory?: string,
+  systemPrompt?: string
 ): AsyncGenerator<string> {
+  const baseSystem = systemPrompt ?? SYSTEM_TEXT;
   const systemText = contextMemory
-    ? `${SYSTEM_TEXT}\n\nUser memory:\n${contextMemory}`
-    : SYSTEM_TEXT;
+    ? `${baseSystem}\n\nUser memory:\n${contextMemory}`
+    : baseSystem;
 
   const history = messages.slice(-20).map((m) => ({
     role: m.role === 'assistant' ? 'model' : 'user',

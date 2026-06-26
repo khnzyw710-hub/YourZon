@@ -30,6 +30,7 @@ import { detectFocusCommand, startFocus, stopFocus, isFocusing } from '@/service
 import { triggerNightlyConsolidation } from '@/services/memory/consolidation';
 import { feedPassiveTranscript, startPassiveMode, stopPassiveMode, isPassiveActive } from '@/services/passive';
 import { buildLifeContextString, startLifeTracking } from '@/services/lifetracker';
+import { buildMegaContext } from '@/services/jarvis/mega-context';
 
 export function useListening() {
   const {
@@ -110,7 +111,9 @@ export function useListening() {
         if (settings.ttsEnabled) {
           await speak(result.output, settings.ttsRate, () => setListeningState('passive'),
             settings.ttsProvider === 'elevenlabs' ? settings.apiKeys.elevenlabs : undefined,
-            settings.elevenLabsVoiceId
+            settings.elevenLabsVoiceId,
+            settings.ttsProvider === 'openai' ? settings.apiKeys.openai : undefined,
+            settings.openaiTtsVoice
           );
         } else {
           setListeningState('passive');
@@ -138,7 +141,9 @@ export function useListening() {
             if (settings.ttsEnabled) {
               speak(fullText, settings.ttsRate, () => setListeningState('passive'),
                 settings.ttsProvider === 'elevenlabs' ? settings.apiKeys.elevenlabs : undefined,
-                settings.elevenLabsVoiceId
+                settings.elevenLabsVoiceId,
+                settings.ttsProvider === 'openai' ? settings.apiKeys.openai : undefined,
+                settings.openaiTtsVoice
               );
             } else {
               setListeningState('passive');
@@ -153,6 +158,13 @@ export function useListening() {
       // ── Standard AI query ──────────────────────────────────────────────────
       let query = rawQuery;
       let imageBase64: string | undefined;
+
+      // Build JARVIS mega-context (persona, profile, temporal, memory, life stats)
+      const megaContext = await buildMegaContext(rawQuery, settings).catch(() => ({
+        systemPrompt: '',
+        contextInjection: '',
+        estimatedTokens: 0,
+      }));
 
       // Get pre-fetched context (likely already loaded from onVoiceStart)
       const prefetched = await getPrefetchedContext();
@@ -211,6 +223,11 @@ export function useListening() {
       const commitmentsCtx = await buildCommitmentsContextString().catch(() => '');
       if (commitmentsCtx) query = `${commitmentsCtx}\n${query}`;
 
+      // Inject JARVIS context into the query (location, calendar, life stats, memory)
+      if (megaContext.contextInjection) {
+        query = `${megaContext.contextInjection}\n\n${query}`;
+      }
+
       addMessage({ id: makeId(), role: 'user', content: rawQuery, timestamp: Date.now() });
 
       try {
@@ -223,7 +240,8 @@ export function useListening() {
         const augmentedQuery = `${query}\n\n${TOOL_MANIFEST}`;
 
         const { stream, provider } = await routeToAIStream(
-          augmentedQuery, messages, settings, imageBase64
+          augmentedQuery, messages, settings, imageBase64,
+          megaContext.systemPrompt || undefined
         );
 
         setActiveProvider(provider);
@@ -240,7 +258,9 @@ export function useListening() {
               speak(
                 sentence, settings.ttsRate, resolve,
                 settings.ttsProvider === 'elevenlabs' ? settings.apiKeys.elevenlabs : undefined,
-                settings.elevenLabsVoiceId
+                settings.elevenLabsVoiceId,
+                settings.ttsProvider === 'openai' ? settings.apiKeys.openai : undefined,
+                settings.openaiTtsVoice
               );
             });
           },
@@ -254,7 +274,10 @@ export function useListening() {
               if (result.success && !full.includes(result.output)) {
                 await speak(
                   result.output, settings.ttsRate, undefined,
-                  settings.ttsProvider === 'elevenlabs' ? settings.apiKeys.elevenlabs : undefined
+                  settings.ttsProvider === 'elevenlabs' ? settings.apiKeys.elevenlabs : undefined,
+                  settings.elevenLabsVoiceId,
+                  settings.ttsProvider === 'openai' ? settings.apiKeys.openai : undefined,
+                  settings.openaiTtsVoice
                 );
               }
             }

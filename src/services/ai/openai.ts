@@ -7,10 +7,11 @@ export async function askOpenAI(
   query: string,
   apiKey: string,
   imageBase64?: string,
-  contextMemory?: string
+  contextMemory?: string,
+  systemPrompt?: string
 ): Promise<string> {
   let collected = '';
-  for await (const chunk of streamOpenAI(messages, query, apiKey, imageBase64, contextMemory)) {
+  for await (const chunk of streamOpenAI(messages, query, apiKey, imageBase64, contextMemory, systemPrompt)) {
     collected += chunk;
   }
   return collected;
@@ -21,9 +22,11 @@ export async function* streamOpenAI(
   query: string,
   apiKey: string,
   imageBase64?: string,
-  contextMemory?: string
+  contextMemory?: string,
+  systemPrompt?: string
 ): AsyncGenerator<string> {
-  const system = contextMemory ? `${SYSTEM}\n\nUser memory:\n${contextMemory}` : SYSTEM;
+  const baseSystem = systemPrompt ?? SYSTEM;
+  const system = contextMemory ? `${baseSystem}\n\nUser memory:\n${contextMemory}` : baseSystem;
 
   const history = messages.slice(-20).map((m) => ({ role: m.role, content: m.content }));
 

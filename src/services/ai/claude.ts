@@ -8,10 +8,11 @@ export async function askClaude(
   query: string,
   apiKey: string,
   imageBase64?: string,
-  contextMemory?: string
+  contextMemory?: string,
+  systemPrompt?: string
 ): Promise<string> {
   let collected = '';
-  for await (const chunk of streamClaude(messages, query, apiKey, imageBase64, contextMemory)) {
+  for await (const chunk of streamClaude(messages, query, apiKey, imageBase64, contextMemory, systemPrompt)) {
     collected += chunk;
   }
   return collected;
@@ -23,11 +24,13 @@ export async function* streamClaude(
   query: string,
   apiKey: string,
   imageBase64?: string,
-  contextMemory?: string
+  contextMemory?: string,
+  systemPrompt?: string
 ): AsyncGenerator<string> {
-  const systemPrompt = contextMemory
-    ? `${SYSTEM}\n\nRelevant memory about this user:\n${contextMemory}`
-    : SYSTEM;
+  const baseSystem = systemPrompt ?? SYSTEM;
+  const finalSystem = contextMemory
+    ? `${baseSystem}\n\nRelevant memory about this user:\n${contextMemory}`
+    : baseSystem;
 
   const history = messages
     .filter((m) => m.role === 'user' || m.role === 'assistant')
@@ -53,7 +56,7 @@ export async function* streamClaude(
     body: JSON.stringify({
       model: 'claude-sonnet-4-6',
       max_tokens: 1024,
-      system: systemPrompt,
+      system: finalSystem,
       messages: history,
       stream: true,
     }),
