@@ -31,6 +31,7 @@ import { triggerNightlyConsolidation } from '@/services/memory/consolidation';
 import { feedPassiveTranscript, startPassiveMode, stopPassiveMode, isPassiveActive } from '@/services/passive';
 import { buildLifeContextString, startLifeTracking } from '@/services/lifetracker';
 import { buildMegaContext } from '@/services/jarvis/mega-context';
+import { startPorcupine, stopPorcupine, hasPorcupineKey } from '@/services/wakeword/porcupine';
 
 export function useListening() {
   const {
@@ -76,6 +77,25 @@ export function useListening() {
       startLifeTracking().catch(() => {});
     }
   }, [settings.lifeTracking]);
+
+  // Porcupine on-device wake word (when access key is configured)
+  useEffect(() => {
+    if (!hasPorcupineKey(settings.porcupineKey)) return;
+
+    startPorcupine(
+      settings.porcupineKey,
+      () => {
+        if (isActive.current) return; // already active
+        isActive.current = true;
+        setListeningState('active');
+        HapticPattern.wakeWordDetected();
+        if (settings.predictiveMode) onVoiceStart();
+      },
+      (err) => console.warn('[Porcupine]', err)
+    );
+
+    return () => { stopPorcupine(); };
+  }, [settings.porcupineKey]);
 
   const resetSilenceTimer = useCallback(() => {
     clearTimeout(silenceTimer.current!);

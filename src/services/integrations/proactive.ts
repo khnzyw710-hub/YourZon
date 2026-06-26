@@ -43,7 +43,13 @@ export async function deliverMorningBriefing(): Promise<void> {
     settings
   );
 
-  await speak(response, settings.ttsRate);
+  await speak(
+    response, settings.ttsRate, undefined,
+    settings.ttsProvider === 'elevenlabs' ? settings.apiKeys.elevenlabs : undefined,
+    settings.elevenLabsVoiceId,
+    settings.ttsProvider === 'openai' ? settings.apiKeys.openai : undefined,
+    settings.openaiTtsVoice
+  );
 }
 
 // ─── Evening summary ──────────────────────────────────────────────────────────
@@ -60,7 +66,13 @@ export async function deliverEveningSummary(): Promise<void> {
     settings
   );
 
-  await speak(response, settings.ttsRate);
+  await speak(
+    response, settings.ttsRate, undefined,
+    settings.ttsProvider === 'elevenlabs' ? settings.apiKeys.elevenlabs : undefined,
+    settings.elevenLabsVoiceId,
+    settings.ttsProvider === 'openai' ? settings.apiKeys.openai : undefined,
+    settings.openaiTtsVoice
+  );
 }
 
 // ─── Upcoming event reminder ──────────────────────────────────────────────────

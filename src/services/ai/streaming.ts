@@ -27,7 +27,7 @@ export async function consumeStream(
   generator: AsyncGenerator<string>,
   onChunk: (text: string) => void,
   onSentence: (sentence: string) => Promise<void>,
-  onDone: (fullText: string) => void
+  onDone: (fullText: string) => void | Promise<void>
 ): Promise<void> {
   let buffer = '';
   let full = '';
@@ -50,5 +50,5 @@ export async function consumeStream(
     await onSentence(buffer.trim());
   }
 
-  onDone(full);
+  await onDone(full);
 }

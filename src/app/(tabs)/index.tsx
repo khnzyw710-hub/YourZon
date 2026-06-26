@@ -12,7 +12,8 @@ import { useListening } from '@/hooks/useListening';
 import { useRecognitionEvents } from '@/services/speech/recognition';
 import { setCameraRef, startSceneMonitor, stopSceneMonitor } from '@/services/camera';
 import { showListeningNotification, hideListeningNotification, registerBackgroundTask } from '@/services/background';
-import { getContextIcon, getContextLabel } from '@/services/ambient';
+import { startAmbientMonitor, stopAmbientMonitor, getContextIcon, getContextLabel } from '@/services/ambient';
+import { deliverMorningBriefing, deliverEveningSummary } from '@/services/integrations/proactive';
 import ZonOrb from '@/components/ZonOrb';
 import StatusIndicator from '@/components/StatusIndicator';
 import ConversationBubble from '@/components/ConversationBubble';
@@ -28,7 +29,7 @@ export default function MainScreen() {
     activeProvider, currentConversation, newConversation,
     errorMessage, setError, settings, micActive,
     coachingTip, setCoachingTip, agentProgress,
-    ambientContext, proactiveMessage, setProactiveMessage,
+    ambientContext, setAmbientContext, proactiveMessage, setProactiveMessage,
   } = useZonStore((s) => ({
     listeningState: s.listeningState,
     liveTranscript: s.liveTranscript,
@@ -44,6 +45,7 @@ export default function MainScreen() {
     setCoachingTip: s.setCoachingTip,
     agentProgress: s.agentProgress,
     ambientContext: s.ambientContext,
+    setAmbientContext: s.setAmbientContext,
     proactiveMessage: s.proactiveMessage,
     setProactiveMessage: s.setProactiveMessage,
   }));
@@ -84,6 +86,44 @@ export default function MainScreen() {
   useEffect(() => {
     scrollRef.current?.scrollToEnd({ animated: true });
   }, [currentConversation?.messages, streamingText]);
+
+  // Ambient intelligence monitor
+  useEffect(() => {
+    if (!settings.ambientMode) return;
+    startAmbientMonitor((event) => {
+      if (event.type === 'context_change' && event.context) {
+        setAmbientContext(event.context);
+      } else if (event.type === 'proactive_alert' && event.message) {
+        setProactiveMessage(event.message);
+      }
+    });
+    return () => stopAmbientMonitor();
+  }, [settings.ambientMode]);
+
+  // Proactive briefing scheduler (checks every minute)
+  const _lastBriefing = useRef<string>('');
+  useEffect(() => {
+    const check = () => {
+      const today = new Date().toDateString();
+      const hour = new Date().getHours();
+      const { morningBriefing, morningHour, eveningBriefing, eveningHour } = settings.proactive;
+
+      if (morningBriefing && hour === morningHour && _lastBriefing.current !== `m-${today}`) {
+        _lastBriefing.current = `m-${today}`;
+        deliverMorningBriefing().catch(() => {});
+      }
+      if (eveningBriefing && hour === eveningHour && _lastBriefing.current !== `e-${today}`) {
+        _lastBriefing.current = `e-${today}`;
+        deliverEveningSummary().catch(() => {});
+      }
+    };
+    check();
+    const timer = setInterval(check, 60_000);
+    return () => clearInterval(timer);
+  }, [
+    settings.proactive.morningBriefing, settings.proactive.morningHour,
+    settings.proactive.eveningBriefing, settings.proactive.eveningHour,
+  ]);
 
   const messages = currentConversation?.messages ?? [];
 
