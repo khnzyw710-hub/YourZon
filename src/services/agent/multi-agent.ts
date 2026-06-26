@@ -181,7 +181,7 @@ export async function runMultiAgent(
   settings: Settings,
   onProgress: (progress: AgentProgress) => void,
   onChunk: (text: string) => void,
-  onDone: (fullText: string) => void
+  onDone: (fullText: string) => void | Promise<void>
 ): Promise<void> {
   // Phase 1: Planning
   onProgress({ phase: 'planning', completedTasks: 0, totalTasks: 0, currentTask: 'מתכנן...', partialResult: '' });
@@ -207,9 +207,9 @@ export async function runMultiAgent(
       onProgress({ phase: 'synthesizing', completedTasks: tasks.length, totalTasks: tasks.length, currentTask: 'מסכם...', partialResult: text });
     },
     async () => {},
-    (full) => {
+    async (full) => {
       fullText = full;
-      onDone(full);
+      await onDone(full);
       onProgress({ phase: 'done', completedTasks: tasks.length, totalTasks: tasks.length, currentTask: 'הושלם', partialResult: full });
     }
   );
