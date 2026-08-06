@@ -21,11 +21,11 @@ export default async function HomePage() {
       </section>
 
       <a
-        href={`${basePath}/terminal`}
+        href={`${basePath}/claude`}
         className="fixed left-4 top-1/2 -translate-y-1/2 z-50 flex flex-col items-center gap-1 bg-gradient-to-b from-purple-700 to-purple-900 text-white rounded-2xl px-3 py-4 shadow-lg hover:shadow-xl hover:from-purple-600 hover:to-purple-800 transition-all"
       >
-        <span className="text-2xl">⚡</span>
-        <span className="text-xs font-bold [writing-mode:vertical-lr] rotate-180">Claude Opus 5</span>
+        <span className="text-2xl">📁</span>
+        <span className="text-xs font-bold [writing-mode:vertical-lr] rotate-180">Claude</span>
       </a>
 
       <section className="max-w-7xl mx-auto px-4 py-12">
