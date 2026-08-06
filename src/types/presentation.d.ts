@@ -1,41 +1,22 @@
-interface PresentationRequest {
-  new (urls: string[]): PresentationRequest;
-  start(): Promise<PresentationConnection>;
-  reconnect(presentationId: string): Promise<PresentationConnection>;
+interface ScreenDetailed {
+  availHeight: number;
+  availLeft: number;
+  availTop: number;
+  availWidth: number;
+  height: number;
+  width: number;
+  left: number;
+  top: number;
+  isPrimary: boolean;
+  isInternal: boolean;
+  label: string;
 }
 
-interface PresentationConnection {
-  id: string;
-  url: string;
-  state: "connecting" | "connected" | "closed" | "terminated";
-  send(data: string): void;
-  close(): void;
-  terminate(): void;
-  onconnect: ((this: PresentationConnection, ev: Event) => any) | null;
-  onclose: ((this: PresentationConnection, ev: Event) => any) | null;
-  onterminate: ((this: PresentationConnection, ev: Event) => any) | null;
-  onmessage: ((this: PresentationConnection, ev: MessageEvent) => any) | null;
+interface ScreenDetails extends EventTarget {
+  screens: readonly ScreenDetailed[];
+  currentScreen: ScreenDetailed;
 }
 
-interface Presentation {
-  defaultRequest: PresentationRequest | null;
-  receiver: PresentationReceiver;
-}
-
-interface PresentationReceiver {
-  connectionList: Promise<PresentationConnectionList>;
-}
-
-interface PresentationConnectionList {
-  connections: readonly PresentationConnection[];
-  onconnectionavailable: ((this: PresentationConnectionList, ev: any) => any) | null;
-}
-
-declare var PresentationRequest: {
-  prototype: PresentationRequest;
-  new (urls: string[]): PresentationRequest;
-};
-
-interface Navigator {
-  presentation?: Presentation;
+interface Window {
+  getScreenDetails(): Promise<ScreenDetails>;
 }

@@ -66,30 +66,6 @@ export default function DisplayPage() {
   }, []);
 
   useEffect(() => {
-    // Presentation API receiver
-    if ("presentation" in navigator && "receiver" in (navigator as any).presentation) {
-      const receiver = (navigator as any).presentation.receiver;
-      receiver.connectionList.then((list: any) => {
-        list.connections.forEach((conn: PresentationConnection) => {
-          setConnected(true);
-          conn.onmessage = (e: MessageEvent) => {
-            try {
-              handleMessage(JSON.parse(e.data));
-            } catch {}
-          };
-        });
-        list.onconnectionavailable = (event: any) => {
-          setConnected(true);
-          event.connection.onmessage = (e: MessageEvent) => {
-            try {
-              handleMessage(JSON.parse(e.data));
-            } catch {}
-          };
-        };
-      });
-    }
-
-    // BroadcastChannel fallback
     const channel = createChannel();
     if (!channel) return;
 
