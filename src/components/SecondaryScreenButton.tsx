@@ -1,13 +1,20 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
-import { createChannel, sendDisplayMessage } from "@/lib/broadcast";
+import { useState, useEffect, useCallback, useRef } from "react";
+import {
+  createChannel,
+  sendDisplayMessage,
+  setPresentationConnection,
+  getDisplayUrl,
+} from "@/lib/broadcast";
 import type { DisplayMessage } from "@/lib/broadcast";
 
 export function SecondaryScreenButton() {
   const [connected, setConnected] = useState(false);
+  const [casting, setCasting] = useState(false);
+  const presentationRef = useRef<PresentationConnection | null>(null);
 
-  const checkConnection = useCallback(() => {
+  const checkBroadcastConnection = useCallback(() => {
     const channel = createChannel();
     if (!channel) return;
 
@@ -24,32 +31,78 @@ export function SecondaryScreenButton() {
     sendDisplayMessage("ping");
 
     timeout = setTimeout(() => {
-      setConnected(false);
+      if (!casting) setConnected(false);
       channel.close();
     }, 1000);
-  }, []);
+  }, [casting]);
 
   useEffect(() => {
-    checkConnection();
-    const interval = setInterval(checkConnection, 5000);
+    checkBroadcastConnection();
+    const interval = setInterval(checkBroadcastConnection, 5000);
     return () => clearInterval(interval);
-  }, [checkConnection]);
+  }, [checkBroadcastConnection]);
 
-  function openDisplay() {
-    const basePath = process.env.NEXT_PUBLIC_BASE_PATH || "";
-    window.open(`${basePath}/display/`, "yourzon-display", "noopener");
-    setTimeout(checkConnection, 1500);
+  async function startPresentation() {
+    const url = getDisplayUrl();
+
+    if ("presentation" in navigator && "PresentationRequest" in window) {
+      try {
+        const request = new PresentationRequest([url]);
+        const conn = await request.start();
+        presentationRef.current = conn;
+        setPresentationConnection(conn);
+        setCasting(true);
+        setConnected(true);
+
+        conn.onclose = () => {
+          setCasting(false);
+          setConnected(false);
+          setPresentationConnection(null);
+          presentationRef.current = null;
+        };
+
+        conn.onterminate = () => {
+          setCasting(false);
+          setConnected(false);
+          setPresentationConnection(null);
+          presentationRef.current = null;
+        };
+
+        return;
+      } catch {
+        // Presentation API not available or user cancelled - fall through to window.open
+      }
+    }
+
+    window.open(url, "yourzon-display", "noopener");
+    setTimeout(checkBroadcastConnection, 1500);
+  }
+
+  function stopPresentation() {
+    if (presentationRef.current) {
+      try {
+        presentationRef.current.terminate();
+      } catch {}
+      presentationRef.current = null;
+      setPresentationConnection(null);
+    }
+    setCasting(false);
+    setConnected(false);
   }
 
   return (
     <button
-      onClick={openDisplay}
-      className="flex items-center gap-1.5 text-sm px-3 py-1.5 rounded-lg border transition-colors hover:bg-gray-50"
-      title={connected ? "מסך משני מחובר" : "פתח מסך משני"}
+      onClick={casting ? stopPresentation : startPresentation}
+      className={`flex items-center gap-1.5 text-sm px-3 py-1.5 rounded-lg border transition-colors ${
+        casting
+          ? "bg-brand-50 border-brand-300 text-brand-700"
+          : "hover:bg-gray-50"
+      }`}
+      title={casting ? "נתק מסך משני" : "שדר למסך משני"}
     >
-      <span className="text-base">📺</span>
+      <span className="text-base">{casting ? "📡" : "📺"}</span>
       <span className="hidden sm:inline">
-        {connected ? "מסך משני" : "מסך משני"}
+        {casting ? "משדר" : "מסך משני"}
       </span>
       <span
         className={`w-2 h-2 rounded-full ${

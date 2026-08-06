@@ -16,6 +16,16 @@ export interface DisplayMessage {
 
 const CHANNEL_NAME = "yourzon-display";
 
+let presentationConnection: PresentationConnection | null = null;
+
+export function setPresentationConnection(conn: PresentationConnection | null) {
+  presentationConnection = conn;
+}
+
+export function getPresentationConnection() {
+  return presentationConnection;
+}
+
 export function createChannel(): BroadcastChannel | null {
   if (typeof window === "undefined") return null;
   try {
@@ -26,9 +36,23 @@ export function createChannel(): BroadcastChannel | null {
 }
 
 export function sendDisplayMessage(type: DisplayMessageType, payload?: any) {
-  const channel = createChannel();
-  if (!channel) return;
   const msg: DisplayMessage = { type, payload, timestamp: Date.now() };
-  channel.postMessage(msg);
-  channel.close();
+  const json = JSON.stringify(msg);
+
+  if (presentationConnection && presentationConnection.state === "connected") {
+    try {
+      presentationConnection.send(json);
+    } catch {}
+  }
+
+  const channel = createChannel();
+  if (channel) {
+    channel.postMessage(msg);
+    channel.close();
+  }
+}
+
+export function getDisplayUrl(): string {
+  const basePath = process.env.NEXT_PUBLIC_BASE_PATH || "";
+  return `${window.location.origin}${basePath}/display/`;
 }

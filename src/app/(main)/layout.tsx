@@ -1,13 +1,11 @@
 import { DisplayBridge } from "@/components/DisplayBridge";
 import { SecondaryScreenButton } from "@/components/SecondaryScreenButton";
-import { TabletRedirect } from "@/components/TabletRedirect";
 
 const basePath = process.env.NEXT_PUBLIC_BASE_PATH || "";
 
 export default function MainLayout({ children }: { children: React.ReactNode }) {
   return (
     <div className="bg-gray-50 text-gray-900 min-h-screen">
-      <TabletRedirect />
       <DisplayBridge />
       <header className="bg-white shadow-sm border-b sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between">
