@@ -20,6 +20,20 @@ export default async function HomePage() {
         </div>
       </section>
 
+      <section className="max-w-7xl mx-auto px-4 pt-8 pb-4">
+        <a
+          href={`${basePath}/terminal`}
+          className="flex items-center gap-3 bg-gradient-to-l from-purple-700 to-purple-900 text-white rounded-xl p-4 shadow-md hover:shadow-lg hover:from-purple-600 hover:to-purple-800 transition-all"
+        >
+          <span className="text-3xl">⚡</span>
+          <div>
+            <div className="font-bold text-lg">Claude Opus 5 Terminal</div>
+            <div className="text-purple-200 text-sm">גישה מהירה לטרמינל AI</div>
+          </div>
+          <span className="mr-auto text-purple-300 text-xl">←</span>
+        </a>
+      </section>
+
       <section className="max-w-7xl mx-auto px-4 py-12">
         <h2 className="text-2xl font-bold mb-6">קטגוריות</h2>
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-4">
