@@ -20,19 +20,13 @@ export default async function HomePage() {
         </div>
       </section>
 
-      <section className="max-w-7xl mx-auto px-4 pt-8 pb-4">
-        <a
-          href={`${basePath}/terminal`}
-          className="flex items-center gap-3 bg-gradient-to-l from-purple-700 to-purple-900 text-white rounded-xl p-4 shadow-md hover:shadow-lg hover:from-purple-600 hover:to-purple-800 transition-all"
-        >
-          <span className="text-3xl">⚡</span>
-          <div>
-            <div className="font-bold text-lg">Claude Opus 5 Terminal</div>
-            <div className="text-purple-200 text-sm">גישה מהירה לטרמינל AI</div>
-          </div>
-          <span className="mr-auto text-purple-300 text-xl">←</span>
-        </a>
-      </section>
+      <a
+        href={`${basePath}/terminal`}
+        className="fixed left-4 top-1/2 -translate-y-1/2 z-50 flex flex-col items-center gap-1 bg-gradient-to-b from-purple-700 to-purple-900 text-white rounded-2xl px-3 py-4 shadow-lg hover:shadow-xl hover:from-purple-600 hover:to-purple-800 transition-all"
+      >
+        <span className="text-2xl">⚡</span>
+        <span className="text-xs font-bold [writing-mode:vertical-lr] rotate-180">Claude Opus 5</span>
+      </a>
 
       <section className="max-w-7xl mx-auto px-4 py-12">
         <h2 className="text-2xl font-bold mb-6">קטגוריות</h2>
