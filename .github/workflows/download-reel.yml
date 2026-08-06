@@ -1,7 +1,9 @@
 name: Download Instagram Reel
 
 on:
-  workflow_dispatch:
+  push:
+    branches:
+      - claude/instagram-reel-analysis-c3udhq
 
 permissions:
   contents: write
@@ -19,7 +21,6 @@ jobs:
 
       - name: Download reel
         run: |
-          # Try yt-dlp first
           yt-dlp --no-check-certificates -o "reel_video.%(ext)s" "https://www.instagram.com/reel/DbqhPsiR1RU/" 2>&1 || true
 
           if ! ls reel_video.* 1>/dev/null 2>&1; then
@@ -46,7 +47,6 @@ jobs:
             fi
           fi
 
-          # Extract metadata
           for f in embed.html page.html; do
             if [ -f "$f" ]; then
               python3 -c "
@@ -69,7 +69,7 @@ with open('reel_metadata.json', 'w') as out:
           echo "=== Files ==="
           ls -la reel_video* reel_metadata* 2>/dev/null || echo "No files found"
 
-      - name: Upload video as artifact
+      - name: Upload artifacts
         if: always()
         uses: actions/upload-artifact@v4
         with:
