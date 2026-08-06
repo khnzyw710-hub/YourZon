@@ -1,0 +1,94 @@
+name: Download Instagram Reel
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  download:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: claude/instagram-reel-analysis-c3udhq
+
+      - name: Install yt-dlp
+        run: pip install yt-dlp
+
+      - name: Download reel
+        run: |
+          # Try yt-dlp first
+          yt-dlp --no-check-certificates -o "reel_video.%(ext)s" "https://www.instagram.com/reel/DbqhPsiR1RU/" 2>&1 || true
+
+          if ! ls reel_video.* 1>/dev/null 2>&1; then
+            echo "yt-dlp direct failed, trying embed page..."
+            curl -sL -A "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36" \
+              "https://www.instagram.com/reel/DbqhPsiR1RU/embed/" -o embed.html
+
+            VIDEO_URL=$(grep -oP '"video_url"\s*:\s*"\K[^"]+' embed.html | head -1 | sed 's/\\u0026/\&/g')
+            if [ -n "$VIDEO_URL" ]; then
+              echo "Found video URL from embed, downloading..."
+              curl -sL -o reel_video.mp4 "$VIDEO_URL"
+            fi
+          fi
+
+          if ! ls reel_video.* 1>/dev/null 2>&1; then
+            echo "Trying main page..."
+            curl -sL -A "Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1" \
+              "https://www.instagram.com/reel/DbqhPsiR1RU/" -o page.html
+
+            VIDEO_URL=$(grep -oP '"video_url"\s*:\s*"\K[^"]+' page.html | head -1 | sed 's/\\u0026/\&/g')
+            if [ -n "$VIDEO_URL" ]; then
+              echo "Found video URL from page, downloading..."
+              curl -sL -o reel_video.mp4 "$VIDEO_URL"
+            fi
+          fi
+
+          # Extract metadata
+          for f in embed.html page.html; do
+            if [ -f "$f" ]; then
+              python3 -c "
+import re, json
+with open('$f') as fh:
+    html = fh.read()
+og = dict(re.findall(r'<meta\s+(?:property|name)=\"(og:[^\"]+)\"\s+content=\"([^\"]*)\"', html))
+tw = dict(re.findall(r'<meta\s+(?:property|name)=\"(twitter:[^\"]+)\"\s+content=\"([^\"]*)\"', html))
+users = list(set(re.findall(r'\"username\"\s*:\s*\"([^\"]+)\"', html)))
+captions = re.findall(r'\"text\"\s*:\s*\"([^\"]+)\"', html)
+video_urls = [v.encode().decode('unicode_escape') for v in re.findall(r'\"video_url\"\s*:\s*\"([^\"]+)\"', html)]
+result = {'source': '$f', 'og_tags': og, 'twitter_tags': tw, 'usernames': users, 'captions': captions[:5], 'video_urls': video_urls[:3]}
+print(json.dumps(result, indent=2, ensure_ascii=False))
+with open('reel_metadata.json', 'w') as out:
+    json.dump(result, out, indent=2, ensure_ascii=False)
+" 2>/dev/null && break
+            fi
+          done
+
+          echo "=== Files ==="
+          ls -la reel_video* reel_metadata* 2>/dev/null || echo "No files found"
+
+      - name: Upload video as artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: instagram-reel
+          path: |
+            reel_video*
+            reel_metadata*
+            embed.html
+            page.html
+          if-no-files-found: warn
+
+      - name: Commit and push
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add reel_video* reel_metadata* 2>/dev/null || true
+          if git diff --cached --quiet; then
+            echo "No new files to commit"
+          else
+            git commit -m "Add downloaded Instagram reel video and metadata"
+            git push origin claude/instagram-reel-analysis-c3udhq
+          fi
