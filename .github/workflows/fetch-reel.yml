@@ -1,0 +1,40 @@
+name: Fetch Instagram Reel
+on:
+  push:
+    branches: [main]
+    paths: ['.github/workflows/fetch-reel.yml']
+permissions:
+  contents: write
+jobs:
+  fetch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: pip install yt-dlp
+      - name: Download
+        run: |
+          mkdir -p downloads
+          yt-dlp --no-check-certificates -o "downloads/reel.%(ext)s" \
+            "https://www.instagram.com/reel/DbqhPsiR1RU/" 2>&1 || true
+          if ! ls downloads/reel.* 1>/dev/null 2>&1; then
+            curl -sL -A "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36" \
+              "https://www.instagram.com/reel/DbqhPsiR1RU/embed/" -o downloads/embed.html
+            VIDEO_URL=$(grep -oP '"video_url"\s*:\s*"\K[^"]+' downloads/embed.html 2>/dev/null | head -1 | sed 's/\\u0026/\&/g')
+            if [ -n "$VIDEO_URL" ]; then
+              curl -sL -o downloads/reel.mp4 "$VIDEO_URL"
+            fi
+          fi
+          ls -la downloads/
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: reel-download
+          path: downloads/
+      - name: Push to branch
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git checkout -b claude/instagram-reel-analysis-c3udhq origin/claude/instagram-reel-analysis-c3udhq || git checkout -b claude/instagram-reel-analysis-c3udhq
+          cp -r downloads/* . 2>/dev/null || true
+          git add reel* embed* 2>/dev/null || true
+          git diff --cached --quiet || (git commit -m "Add reel download" && git push origin claude/instagram-reel-analysis-c3udhq)
