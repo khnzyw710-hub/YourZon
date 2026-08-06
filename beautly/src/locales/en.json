@@ -1,0 +1,59 @@
+{
+  "welcome": {
+    "title": "Beautly",
+    "tagline": "Beauty services at your door",
+    "subtitle": "Book hairstylists, nail techs, makeup artists and more — right to your home",
+    "cta": "Get Started",
+    "terms": "By continuing you agree to Terms of Service and Privacy Policy"
+  },
+  "auth": {
+    "phoneTitle": "What's your number?",
+    "phoneSubtitle": "We'll send you a verification code via SMS",
+    "sendCode": "Send Code",
+    "otpTitle": "Enter the code",
+    "otpSubtitle": "We sent a verification code to {{phone}}",
+    "resend": "Resend",
+    "resendIn": "Resend in {{seconds}} seconds",
+    "invalidCode": "Invalid code",
+    "back": "Back"
+  },
+  "register": {
+    "title": "Tell us about yourself",
+    "subtitle": "Let's start with the basics",
+    "firstName": "First Name",
+    "lastName": "Last Name",
+    "roleQuestion": "How would you like to use Beautly?",
+    "roleCustomer": "Book services",
+    "roleProvider": "Provide services",
+    "continue": "Continue"
+  },
+  "home": {
+    "greeting": "Hello, {{name}}",
+    "search": "Search services or experts...",
+    "categories": "Categories",
+    "featured": "Top Experts",
+    "nearby": "Nearby",
+    "seeAll": "See All"
+  },
+  "tabs": {
+    "home": "Home",
+    "bookings": "Bookings",
+    "favorites": "Favorites",
+    "profile": "Profile",
+    "dashboard": "Dashboard",
+    "calendar": "Calendar",
+    "jobs": "Jobs",
+    "myProfile": "My Profile"
+  },
+  "common": {
+    "loading": "Loading...",
+    "error": "Error",
+    "retry": "Try Again",
+    "save": "Save",
+    "cancel": "Cancel",
+    "delete": "Delete",
+    "edit": "Edit",
+    "close": "Close",
+    "shekel": "₪"
+  }
+}

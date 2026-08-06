@@ -1,0 +1,84 @@
+{
+  "welcome": {
+    "title": "Beautly",
+    "tagline": "שירותי יופי עד הבית",
+    "subtitle": "הזמינו מעצבי שיער, מניקוריסטיות, מאפרות ועוד - ישירות אליכם",
+    "cta": "התחילו עכשיו",
+    "terms": "בהמשך אתם מסכימים לתנאי השימוש ומדיניות הפרטיות"
+  },
+  "auth": {
+    "phoneTitle": "מה המספר שלכם?",
+    "phoneSubtitle": "נשלח לכם קוד אימות ב-SMS",
+    "sendCode": "שליחת קוד",
+    "otpTitle": "הזינו את הקוד",
+    "otpSubtitle": "שלחנו קוד אימות ל-{{phone}}",
+    "resend": "שלחו שוב",
+    "resendIn": "שליחה חוזרת בעוד {{seconds}} שניות",
+    "invalidCode": "קוד שגוי",
+    "back": "חזרה"
+  },
+  "register": {
+    "title": "ספרו לנו על עצמכם",
+    "subtitle": "נתחיל עם הפרטים הבסיסיים",
+    "firstName": "שם פרטי",
+    "lastName": "שם משפחה",
+    "roleQuestion": "איך תרצו להשתמש ב-Beautly?",
+    "roleCustomer": "להזמין שירותים",
+    "roleProvider": "לתת שירותים",
+    "continue": "המשך"
+  },
+  "home": {
+    "greeting": "שלום, {{name}}",
+    "search": "חפשו שירות או מומחה...",
+    "categories": "קטגוריות",
+    "featured": "מומחים מובילים",
+    "nearby": "בקרבתכם",
+    "seeAll": "הכל"
+  },
+  "categories": {
+    "haircut": "תספורת",
+    "nails": "ציפורניים",
+    "makeup": "איפור",
+    "eyebrows": "גבות",
+    "cosmetics": "קוסמטיקה",
+    "massage": "עיסוי",
+    "styling": "עיצוב שיער",
+    "waxing": "הסרת שיער",
+    "facial": "טיפולי פנים",
+    "coloring": "צביעת שיער",
+    "barber": "ברבר",
+    "gelPolish": "לק ג'ל"
+  },
+  "booking": {
+    "bookNow": "הזמנה עכשיו",
+    "schedule": "קביעת תור",
+    "asap": "בהקדם האפשרי",
+    "selectDate": "בחרו תאריך",
+    "selectTime": "בחרו שעה",
+    "confirmAddress": "אישור כתובת",
+    "payment": "תשלום",
+    "confirm": "אישור הזמנה",
+    "total": "סה\"כ"
+  },
+  "tabs": {
+    "home": "בית",
+    "bookings": "הזמנות",
+    "favorites": "מועדפים",
+    "profile": "פרופיל",
+    "dashboard": "לוח בקרה",
+    "calendar": "יומן",
+    "jobs": "הזמנות",
+    "myProfile": "הפרופיל שלי"
+  },
+  "common": {
+    "loading": "טוען...",
+    "error": "שגיאה",
+    "retry": "נסו שוב",
+    "save": "שמירה",
+    "cancel": "ביטול",
+    "delete": "מחיקה",
+    "edit": "עריכה",
+    "close": "סגירה",
+    "shekel": "₪"
+  }
+}
