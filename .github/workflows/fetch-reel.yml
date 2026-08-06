@@ -10,7 +10,11 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
       - run: pip install yt-dlp
+
       - name: Download
         run: |
           mkdir -p downloads
@@ -25,16 +29,19 @@ jobs:
             fi
           fi
           ls -la downloads/
-      - uses: actions/upload-artifact@v4
-        if: always()
-        with:
-          name: reel-download
-          path: downloads/
-      - name: Push to branch
+
+      - name: Push to feature branch
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git checkout -b claude/instagram-reel-analysis-c3udhq origin/claude/instagram-reel-analysis-c3udhq || git checkout -b claude/instagram-reel-analysis-c3udhq
-          cp -r downloads/* . 2>/dev/null || true
-          git add reel* embed* 2>/dev/null || true
-          git diff --cached --quiet || (git commit -m "Add reel download" && git push origin claude/instagram-reel-analysis-c3udhq)
+          git fetch origin claude/instagram-reel-analysis-c3udhq
+          git checkout claude/instagram-reel-analysis-c3udhq
+          cp downloads/reel.mp4 ./reel_video.mp4 2>/dev/null || true
+          git add reel_video.mp4 2>/dev/null || true
+          if git diff --cached --quiet; then
+            echo "No new files to commit"
+          else
+            git commit -m "Add downloaded Instagram reel video"
+            git push origin claude/instagram-reel-analysis-c3udhq
+            echo "Video pushed successfully!"
+          fi
