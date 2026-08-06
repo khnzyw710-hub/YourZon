@@ -1,0 +1,61 @@
+{
+  "expo": {
+    "name": "Beautly",
+    "slug": "beautly",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/images/icon.png",
+    "scheme": "beautly",
+    "userInterfaceStyle": "automatic",
+    "newArchEnabled": true,
+    "splash": {
+      "image": "./assets/images/splash-icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#E8B4B8"
+    },
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.beautly.app",
+      "infoPlist": {
+        "NSLocationWhenInUseUsageDescription": "Beautly needs your location to find nearby beauty service providers",
+        "NSLocationAlwaysUsageDescription": "Beautly uses your location to track your service provider en route to you",
+        "NSCameraUsageDescription": "Beautly needs camera access to take profile and portfolio photos"
+      }
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/images/adaptive-icon.png",
+        "backgroundColor": "#E8B4B8"
+      },
+      "package": "com.beautly.app",
+      "permissions": ["ACCESS_FINE_LOCATION", "ACCESS_COARSE_LOCATION", "CAMERA"]
+    },
+    "web": {
+      "bundler": "metro",
+      "output": "single",
+      "favicon": "./assets/images/favicon.png"
+    },
+    "plugins": [
+      "expo-router",
+      "expo-font",
+      "expo-secure-store",
+      [
+        "expo-location",
+        {
+          "locationAlwaysAndWhenInUsePermission": "Allow Beautly to use your location"
+        }
+      ],
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/images/notification-icon.png",
+          "color": "#E8B4B8"
+        }
+      ],
+      "expo-image-picker"
+    ],
+    "experiments": {
+      "typedRoutes": true
+    }
+  }
+}

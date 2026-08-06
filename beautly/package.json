@@ -1,0 +1,50 @@
+{
+  "name": "beautly",
+  "version": "1.0.0",
+  "main": "index.ts",
+  "dependencies": {
+    "@tanstack/react-query": "^5.101.4",
+    "axios": "^1.19.0",
+    "date-fns": "^4.4.0",
+    "expo": "~57.0.10",
+    "expo-constants": "^57.0.9",
+    "expo-font": "^57.0.1",
+    "expo-haptics": "^57.0.1",
+    "expo-image": "^57.0.2",
+    "expo-image-picker": "^57.0.7",
+    "expo-linking": "^57.0.5",
+    "expo-location": "^57.0.7",
+    "expo-notifications": "^57.0.8",
+    "expo-router": "^57.0.10",
+    "expo-secure-store": "^57.0.1",
+    "expo-splash-screen": "^57.0.5",
+    "expo-status-bar": "~57.0.1",
+    "expo-web-browser": "^57.0.2",
+    "i18next": "^26.3.6",
+    "nativewind": "^4.2.6",
+    "react": "19.2.3",
+    "react-dom": "^19.2.8",
+    "react-i18next": "^17.0.11",
+    "react-native": "0.86.2",
+    "react-native-gesture-handler": "^3.1.0",
+    "react-native-reanimated": "^4.5.3",
+    "react-native-safe-area-context": "^5.8.1",
+    "react-native-screens": "^4.26.2",
+    "react-native-web": "^0.21.2",
+    "socket.io-client": "^4.8.3",
+    "tailwindcss": "^4.3.3",
+    "zod": "^4.4.3",
+    "zustand": "^5.0.14"
+  },
+  "devDependencies": {
+    "@types/react": "~19.2.2",
+    "typescript": "~6.0.3"
+  },
+  "scripts": {
+    "start": "expo start",
+    "android": "expo start --android",
+    "ios": "expo start --ios",
+    "web": "expo start --web"
+  },
+  "private": true
+}
