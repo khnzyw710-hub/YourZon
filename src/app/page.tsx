@@ -20,13 +20,42 @@ export default async function HomePage() {
         </div>
       </section>
 
-      <a
-        href={`${basePath}/claude`}
-        className="fixed left-4 top-1/2 -translate-y-1/2 z-50 flex flex-col items-center gap-1 bg-gradient-to-b from-purple-700 to-purple-900 text-white rounded-2xl px-3 py-4 shadow-lg hover:shadow-xl hover:from-purple-600 hover:to-purple-800 transition-all"
-      >
-        <span className="text-2xl">📁</span>
-        <span className="text-xs font-bold [writing-mode:vertical-lr] rotate-180">Claude</span>
-      </a>
+      <section className="max-w-7xl mx-auto px-4 pt-10 pb-4">
+        <div className="bg-white rounded-2xl shadow-md border p-6">
+          <div className="flex items-center gap-3 mb-5">
+            <span className="text-3xl">📁</span>
+            <h2 className="text-2xl font-bold text-gray-900">Claude</h2>
+            <span className="text-gray-400 text-sm">— לחץ על מודל כדי לפתוח טרמינל</span>
+          </div>
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3">
+            <a href={`${basePath}/terminal?model=opus-5`} className="bg-gradient-to-b from-purple-600 to-purple-800 text-white rounded-xl p-4 text-center shadow-sm hover:shadow-lg hover:scale-105 transition-all">
+              <span className="text-3xl block mb-2">🟣</span>
+              <span className="text-sm font-bold block">Opus 5</span>
+              <span className="text-purple-200 text-xs">החזק ביותר</span>
+            </a>
+            <a href={`${basePath}/terminal?model=sonnet-5`} className="bg-gradient-to-b from-blue-600 to-blue-800 text-white rounded-xl p-4 text-center shadow-sm hover:shadow-lg hover:scale-105 transition-all">
+              <span className="text-3xl block mb-2">🔵</span>
+              <span className="text-sm font-bold block">Sonnet 5</span>
+              <span className="text-blue-200 text-xs">מומלץ</span>
+            </a>
+            <a href={`${basePath}/terminal?model=fable-5`} className="bg-gradient-to-b from-emerald-600 to-emerald-800 text-white rounded-xl p-4 text-center shadow-sm hover:shadow-lg hover:scale-105 transition-all">
+              <span className="text-3xl block mb-2">🟢</span>
+              <span className="text-sm font-bold block">Fable 5</span>
+              <span className="text-emerald-200 text-xs">יצירתי</span>
+            </a>
+            <a href={`${basePath}/terminal?model=haiku-4`} className="bg-gradient-to-b from-orange-500 to-orange-700 text-white rounded-xl p-4 text-center shadow-sm hover:shadow-lg hover:scale-105 transition-all">
+              <span className="text-3xl block mb-2">🟠</span>
+              <span className="text-sm font-bold block">Haiku 4.5</span>
+              <span className="text-orange-200 text-xs">הכי מהיר</span>
+            </a>
+            <a href={`${basePath}/terminal?model=opus-4`} className="bg-gradient-to-b from-violet-600 to-violet-800 text-white rounded-xl p-4 text-center shadow-sm hover:shadow-lg hover:scale-105 transition-all">
+              <span className="text-3xl block mb-2">🟤</span>
+              <span className="text-sm font-bold block">Opus 4.6</span>
+              <span className="text-violet-200 text-xs">יציב</span>
+            </a>
+          </div>
+        </div>
+      </section>
 
       <section className="max-w-7xl mx-auto px-4 py-12">
         <h2 className="text-2xl font-bold mb-6">קטגוריות</h2>
