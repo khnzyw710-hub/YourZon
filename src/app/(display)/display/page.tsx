@@ -21,6 +21,10 @@ export default function DisplayPage() {
   const featuredBusinesses = SEED_BUSINESSES.filter((b) => b.description).slice(0, 8);
 
   useEffect(() => {
+    try { document.documentElement.requestFullscreen(); } catch {}
+  }, []);
+
+  useEffect(() => {
     function updateTime() {
       setTime(
         new Date().toLocaleTimeString("he-IL", {
