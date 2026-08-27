@@ -1,0 +1,122 @@
+{
+  "expo": {
+    "name": "Zon",
+    "slug": "zon",
+    "version": "1.0.0",
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "scheme": "zon",
+    "userInterfaceStyle": "dark",
+    "newArchEnabled": true,
+    "splash": {
+      "image": "./assets/splash.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#0a0a0a"
+    },
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.zon.app",
+      "infoPlist": {
+        "NSMicrophoneUsageDescription": "Zon needs microphone access for continuous voice listening.",
+        "NSSpeechRecognitionUsageDescription": "Zon uses speech recognition to understand commands.",
+        "NSCameraUsageDescription": "Zon uses your camera to understand your visual environment.",
+        "NSCalendarsUsageDescription": "Zon reads your calendar for proactive context.",
+        "NSContactsUsageDescription": "Zon identifies contacts you mention by name.",
+        "NSLocationWhenInUseUsageDescription": "Zon uses your location for contextual awareness.",
+        "NSPhotoLibraryUsageDescription": "Zon can analyze photos you share.",
+        "UIBackgroundModes": ["audio", "processing", "fetch", "remote-notification"]
+      }
+    },
+    "android": {
+      "package": "com.zon.app",
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#0a0a0a"
+      },
+      "permissions": [
+        "RECORD_AUDIO",
+        "CAMERA",
+        "FOREGROUND_SERVICE",
+        "FOREGROUND_SERVICE_MICROPHONE",
+        "FOREGROUND_SERVICE_CAMERA",
+        "RECEIVE_BOOT_COMPLETED",
+        "INTERNET",
+        "ACCESS_NETWORK_STATE",
+        "BLUETOOTH",
+        "BLUETOOTH_CONNECT",
+        "BLUETOOTH_SCAN",
+        "ACCESS_WIFI_STATE",
+        "CHANGE_WIFI_STATE",
+        "READ_CALENDAR",
+        "WRITE_CALENDAR",
+        "READ_CONTACTS",
+        "SEND_SMS",
+        "ACCESS_FINE_LOCATION",
+        "READ_EXTERNAL_STORAGE",
+        "VIBRATE",
+        "WAKE_LOCK",
+        "RECEIVE_BOOT_COMPLETED",
+        "SYSTEM_ALERT_WINDOW",
+        "POST_NOTIFICATIONS"
+      ]
+    },
+    "plugins": [
+      "expo-router",
+      [
+        "expo-speech-recognition",
+        {
+          "microphonePermission": "Zon needs microphone access for voice listening.",
+          "speechRecognitionPermission": "Zon uses speech recognition to understand commands."
+        }
+      ],
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "Zon uses your camera to understand your environment."
+        }
+      ],
+      "expo-av",
+      "expo-background-task",
+      "expo-secure-store",
+      "expo-sqlite",
+      [
+        "expo-calendar",
+        {
+          "calendarPermission": "Zon reads your calendar for proactive assistance."
+        }
+      ],
+      [
+        "expo-contacts",
+        {
+          "contactsPermission": "Zon uses your contacts to recognize people you mention."
+        }
+      ],
+      [
+        "expo-location",
+        {
+          "locationAlwaysAndWhenInUsePermission": "Zon uses location for context awareness."
+        }
+      ],
+      "expo-notifications",
+      [
+        "react-native-ble-plx",
+        {
+          "isBackgroundEnabled": true,
+          "modes": ["peripheral", "central"],
+          "bluetoothAlwaysPermission": "Zon connects to Bluetooth cameras."
+        }
+      ]
+    ],
+    "experiments": {
+      "typedRoutes": true
+    },
+    "extra": {
+      "eas": {
+        "projectId": "YOUR_EAS_PROJECT_ID"
+      }
+    }
+  }
+}
